@@ -12,6 +12,8 @@ This file separates observed behavior from product claims. Raw machine logs are 
 
 The test suite uses real temporary Git repositories and real local HTTP processes where those boundaries matter. Artifacts binding unit tests use fakes; the live checks below cover the platform boundary.
 
+A no-local fresh clone installed 74 packages from `package-lock.json` with `npm ci` (zero reported vulnerabilities), then passed the same 84-test, TypeScript, and Worker dry-build sequence with a clean Git worktree. Public source is <https://github.com/davidnichols-ops/confluence>; an unauthenticated Git `ls-remote` resolved its `main` branch.
+
 ## Cloudflare and Artifacts
 
 The deployed endpoint is <https://confluence.david-nichols-ops.workers.dev>. Final checked Worker version: `98ab4228-0606-4113-bed8-a3a8216748ef`.

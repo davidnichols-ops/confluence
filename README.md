@@ -4,6 +4,8 @@ Confluence turns one objective into concurrent, reviewable agent work while pres
 
 Live deployment: <https://confluence.david-nichols-ops.workers.dev>
 
+Public source: <https://github.com/davidnichols-ops/confluence>
+
 The Cloudflare path uses a Worker gateway, a SQLite Durable Object coordinator, and a persistent Artifacts Git repository. A trusted runner validates candidate bytes, publishes with `git push --force-with-lease`, confirms the advertised remote ref, and records a receipt before the coordinator advances its baseline. Authentication assigns human, runner, and named-agent roles on the server.
 
 ## Local run

@@ -14,13 +14,13 @@ Give a human a defensible path from one objective through concurrent agent work 
 4. **Human review workflow — complete.** The UI shows the objective, task intent, paths, checkpoints, candidate diff/hash, evidence, approval, reservation, publication receipt, baseline, and audit events. Cloud mode separates human, runner, named-agent, and coordinator credentials.
 5. **Adversarial evidence — complete for contest scope.** Tests cover stale content, path conflicts, malformed refs/objects, wrong parents, failed/mismatched evidence, unauthorized roles, missing credentials, remote races, failed push, idempotent replay, output bounds, timeouts, interruption, and checkpoint tampering. Claims remain bounded to the tested paths.
 6. **Release verification and deployment — complete.** The sequential verifier passes 84 tests in nine files, TypeScript, and Worker dry build. Worker version `98ab4228-0606-4113-bed8-a3a8216748ef` is deployed and its protected state, persistent Artifacts repo, and token mint/revoke route were checked live.
-7. **Public source and submission packet — in progress until the release commit is pushed.** Machine-prepared materials include source, MIT license, run instructions, evidence, seven-minute demo plan, form copy, deployment inventory, and the human checklist.
+7. **Public source and submission packet — complete.** Source is public at <https://github.com/davidnichols-ops/confluence> with the MIT license, run instructions, evidence, seven-minute demo plan, form copy, deployment inventory, and human checklist.
 
 ## Release freeze gates
 
 - Fresh-clone `npm ci` plus `node scripts/verify-release.mjs` must pass from the release commit.
 - Tracked-byte credential scan must return no secrets.
-- The GitHub repository must be public and readable without authentication.
+- The GitHub repository is public and its `main` ref was read without authentication.
 - The deployed Worker must still return the UI, reject unauthenticated state access, and expose the recorded publication to an authorized runner.
 
 ## Human-only completion

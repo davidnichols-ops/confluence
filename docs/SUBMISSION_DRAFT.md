@@ -16,6 +16,8 @@ The trusted runner verifies the candidate’s bundle and actual Git objects in i
 
 The deployed product is available at <https://confluence.david-nichols-ops.workers.dev>. A production path published commit `52b1edaba237676bacd69c73e072bc8a001d08fb` to the persistent `confluence-baseline` Artifacts repository and recorded the matching receipt at coordinator revision 1. Unauthenticated state access is rejected.
 
+Public source: <https://github.com/davidnichols-ops/confluence>.
+
 Real `agy` and Devin processes produced useful commits in isolated worktrees with overlapping measured execution intervals. A third provider process was intentionally stopped, checkpointed, and resumed successfully in a different OS process. The release verifier passes 84 tests in nine files, TypeScript, and a Worker dry build.
 
 ## Run and review
@@ -34,4 +36,4 @@ The measured claim is two concurrent provider processes and one restart recovery
 
 ## Human fields still required
 
-Add the final public source URL, team/contact/location/attendee details, and approved 5–10 minute video. Confirm eligibility, rights, and the official terms personally. License: MIT.
+Add team/contact/location/attendee details and the approved 5–10 minute video. Confirm eligibility, rights, and the official terms personally. License: MIT.
