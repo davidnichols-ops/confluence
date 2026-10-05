@@ -19,6 +19,20 @@ async function ready() {
 }
 
 describe('integration admission invariants', () => {
+  it('reserves publication and integrates only a matching trusted receipt', async () => {
+    let state=await ready();
+    const hash=state.candidate!.treeHash;
+    state=await applyAction(state,{type:'approve',treeHash:hash,actor:human});
+    state=await applyAction(state,{type:'reserve_publication',ref:'refs/heads/main',expectedHead:'1'.repeat(40),actor:human});
+    expect(state.revision).toBe(0); expect(state.publication?.status).toBe('reserved');
+    const receipt={ref:'refs/heads/main',previousHead:'1'.repeat(40),commit:'2'.repeat(40),tree:'3'.repeat(40),contentHash:hash,remote:'https://example.artifacts.cloudflare.net/git/default/repo.git',publishedAt:new Date().toISOString()};
+    await expect(applyAction(state,{type:'record_publication',receipt:{...receipt,contentHash:'f'.repeat(64)},actor:runner})).rejects.toMatchObject({code:'publication_mismatch'});
+    await expect(applyAction(state,{type:'record_publication',receipt,actor:human})).rejects.toMatchObject({code:'forbidden'});
+    state=await applyAction(state,{type:'record_publication',receipt,actor:runner});
+    expect(state.revision).toBe(1); expect(state.baseline['a.txt']).toBe('updated'); expect(state.publication?.status).toBe('published'); expect(state.candidate).toBeUndefined();
+    expect((await applyAction(state,{type:'record_publication',receipt,actor:runner})).revision).toBe(1);
+    await expect(applyAction(state,{type:'record_publication',receipt:{...receipt,remote:'https://other.example/repo.git'},actor:runner})).rejects.toMatchObject({code:'publication_mismatch'});
+  });
   it('binds evidence and approval to exact bytes and requires both', async () => {
     let state = await ready();
     await expect(applyAction(state,{type:'integrate',actor:human})).rejects.toThrow();

@@ -14,6 +14,8 @@ describe('credential-bound authority',()=>{
     expect(authorize(request('alice-secret'),env,'record_evidence').ok).toBe(false);
     expect(authorize(request('human-secret'),env,'integrate')).toEqual({ok:true,actor:{id:'human-reviewer',role:'human'}});
     expect(authorize(request('runner-secret'),env,'record_evidence')).toEqual({ok:true,actor:{id:'trusted-runner',role:'runner'}});
+    expect(authorize(request('runner-secret'),env,'record_publication')).toEqual({ok:true,actor:{id:'trusted-runner',role:'runner'}});
+    expect(authorize(request('human-secret'),env,'reserve_publication')).toEqual({ok:true,actor:{id:'human-reviewer',role:'human'}});
   });
   it('refuses ambiguous and malformed credential configuration',()=>{
     expect(authorize(request('same'),{HUMAN_TOKEN:'same',RUNNER_TOKEN:'same'},'approve').ok).toBe(false);

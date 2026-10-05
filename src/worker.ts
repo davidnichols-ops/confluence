@@ -159,10 +159,22 @@ async function handleArtifacts(request: Request, env: Env, url: URL): Promise<Re
       const ttl = Math.min(Math.max(requested, 60), 86400);
       const minted = await adapter.mintToken(scope, ttl);
       return json(
-        { plaintext: minted.plaintext, expiresAt: minted.expiresAt, scope, ttl },
+        { id: minted.id, plaintext: minted.plaintext, expiresAt: minted.expiresAt, scope, ttl },
         200,
         { 'cache-control': 'no-store' },
       );
+    }
+    if (request.method === 'POST' && route === '/api/artifacts/token/revoke') {
+      let body: { tokenOrId?: string } = {};
+      try {
+        body = (await request.json()) as { tokenOrId?: string };
+      } catch {
+        return json({ error: 'Invalid revoke request JSON', code: 'invalid_input' }, 400);
+      }
+      if (!body.tokenOrId || typeof body.tokenOrId !== 'string') {
+        return json({ error: 'tokenOrId required', code: 'invalid_input' }, 400);
+      }
+      return json({ revoked: await adapter.revokeToken(body.tokenOrId) }, 200, { 'cache-control': 'no-store' });
     }
     if (request.method === 'POST' && route === '/api/artifacts/fork') {
       let body: { name?: string; description?: string } = {};
@@ -242,14 +254,34 @@ export default {
       }
       const auth = authorizeWrite(request, env, action);
       if (!auth.ok) return json({ error: auth.message, code: auth.code }, auth.status);
-      if (action.type === 'integrate') return json({error:'Remote Git integration runner is not configured; no repository was changed',code:REMOTE_MERGE_UNAVAILABLE},501);
-      const serverAction = { ...action, actor: auth.actor } as Action;
+      let serverAction: Action;
+      if (action.type === 'integrate') {
+        const input = action as Action & {ref?:string;expectedHead?:string};
+        let ref = input.ref;
+        let expectedHead = input.expectedHead;
+        if (!ref || !expectedHead) {
+          const adapter = adapterFor(env);
+          const [info, commits] = await Promise.all([adapter.info(), adapter.log(1)]);
+          ref = `refs/heads/${info.defaultBranch}`;
+          expectedHead = commits[0]?.hash ?? '0'.repeat(40);
+        }
+        serverAction = {type:'reserve_publication',ref,expectedHead,actor:auth.actor};
+      } else serverAction = { ...action, actor: auth.actor } as Action;
       const result = await coordinator.apply(serverAction);
       if (!result.ok) {
         const status = result.code === 'internal_error' ? 500 : errorStatus(result.code);
         return json({ error: result.message, code: result.code }, status);
       }
       return json({ ...result.state, mode: 'cloudflare' }, 200);
+    }
+
+    if (request.method === 'POST' && path === '/api/publications/complete') {
+      const auth = authorize(request, env, 'record_publication');
+      if (!auth.ok) return json({error:auth.message,code:auth.code},auth.status);
+      let receipt: unknown;
+      try { receipt = (await request.json() as {receipt?:unknown}).receipt; } catch { return json({error:'invalid JSON body',code:'invalid_json'},400); }
+      const result = await coordinator.apply({type:'record_publication',receipt,actor:auth.actor} as Action);
+      return result.ok ? json({...result.state,mode:'cloudflare'},200) : json({error:result.message,code:result.code},result.code==='internal_error'?500:409);
     }
 
     if (path.startsWith('/api/artifacts/')) {

@@ -928,6 +928,119 @@
       font-size: 12px;
       font-style: italic;
     }
+
+    /* Accessibility focus indicators */
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--accent-orange);
+      outline-offset: 2px;
+    }
+
+    /* Error action guidance */
+    .error-text-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .error-msg-text {
+      font-weight: 600;
+      color: #fecaca;
+    }
+    .error-action-text {
+      font-size: 11px;
+      color: #fef08a;
+      font-family: var(--font-sans);
+      display: none;
+    }
+    .error-action-text.visible {
+      display: inline-block;
+    }
+
+    /* Provider intervals */
+    .interval-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: #93c5fd;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .interval-label {
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+      font-size: 9px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Checkpoint recovery callout */
+    .recovery-box {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid var(--status-green-border);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .recovery-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .recovery-badge {
+      background: var(--status-green-dim);
+      border: 1px solid var(--status-green-border);
+      color: var(--status-green);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+    }
+    .recovery-text {
+      color: #d1fae5;
+      font-size: 11px;
+    }
+
+    /* Publication receipt card */
+    .receipt-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 8px;
+    }
+    .receipt-item {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .receipt-item-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+    .receipt-item-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #38bdf8;
+      word-break: break-all;
+      cursor: pointer;
+    }
+    .receipt-item-val:hover {
+      text-decoration: underline;
+    }
     @media (max-width: 1100px) {
       .app-header, .brand-section, .header-actions, .arch-banner { flex-wrap: wrap; gap: 10px; }
       .app-header { position: static; }
@@ -951,11 +1064,14 @@
         <div class="brand-sub">Concurrent Multi-Agent Collaboration Engine</div>
       </div>
       <div class="system-status">
-        <div id="mode-badge" class="badge badge-local">
+        <div id="mode-badge" class="badge badge-local" role="status" aria-live="polite">
           <span class="badge-dot"></span>
           <span id="mode-text">LOCAL SIMULATION</span>
         </div>
-        <div id="rev-badge" class="badge badge-rev">REV #0</div>
+        <div id="rev-badge" class="badge badge-rev" role="status" aria-live="polite">REV #0</div>
+        <div id="repo-badge" class="badge badge-rev" style="display:none;" role="status"></div>
+        <div id="ref-badge" class="badge badge-rev" style="display:none;" role="status"></div>
+        <div id="commit-badge" class="badge badge-rev" style="display:none;" role="status"></div>
       </div>
     </div>
 
@@ -964,11 +1080,11 @@
         <label for="auth-token">Bearer</label>
         <input type="password" id="auth-token" placeholder="Optional token" autocomplete="off" />
       </div>
-      <button id="btn-refresh" class="btn btn-sm">
+      <button id="btn-refresh" class="btn btn-sm" aria-label="Refresh state">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
         Refresh
       </button>
-      <button id="btn-demo" class="btn btn-sm btn-primary">
+      <button id="btn-demo" class="btn btn-sm btn-primary" aria-label="Run scenario demo">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Run Scenario Demo
       </button>
@@ -996,14 +1112,17 @@
     </div>
   </aside>
 
-  <!-- System Error Toast / Banner -->
-  <div id="error-banner" class="error-banner">
+  <!-- System Error Toast / Banner with Actionable Guidance & Accessibility -->
+  <aside id="error-banner" class="error-banner" role="alert" aria-live="assertive">
     <div class="error-left">
       <span id="error-code" class="error-code">ERROR</span>
-      <span id="error-msg">An unexpected error occurred.</span>
+      <div class="error-text-group">
+        <span id="error-msg" class="error-msg-text">An unexpected error occurred.</span>
+        <span id="error-action" class="error-action-text"></span>
+      </div>
     </div>
-    <button id="error-dismiss" class="btn btn-sm btn-ghost" style="color: #fca5a5;">Dismiss</button>
-  </div>
+    <button id="error-dismiss" class="btn btn-sm btn-ghost" style="color: #fca5a5;" aria-label="Dismiss error notification">Dismiss</button>
+  </aside>
 
   <!-- Scenario Demo Outcomes Drawer -->
   <div id="demo-banner" class="demo-banner">
@@ -1170,6 +1289,20 @@
           </div>
         </div>
 
+        <!-- Stage 6: Publication Receipt (displayed only when API supplies it) -->
+        <div id="publication-receipt-stage" class="pipeline-stage" style="display:none; border-color:var(--status-green-border);">
+          <div class="pipeline-header" style="background:rgba(16, 185, 129, 0.08);">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="pipeline-step" style="color:var(--status-green);">Publication Receipt (Verified CAS Commit)</span>
+              <span id="receipt-idempotent-badge" class="badge status-integrated">ATOMIC CAS ADVANCE</span>
+            </div>
+            <span id="receipt-ref-badge" class="badge badge-rev">refs/heads/main</span>
+          </div>
+          <div class="card-body" id="publication-receipt-body" style="gap:8px;">
+            <div class="receipt-grid" id="receipt-grid"></div>
+          </div>
+        </div>
+
         <!-- Current Integrated Baseline Files -->
         <div class="pipeline-stage">
           <div class="pipeline-header">
@@ -1200,11 +1333,11 @@
 
   <!-- Modals & Overlays (pure DOM, no external dependencies) -->
   <!-- Checkpoint Modal -->
-  <div id="modal-checkpoint" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center;">
+  <div id="modal-checkpoint" role="dialog" aria-modal="true" aria-labelledby="modal-checkpoint-title" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center;">
     <div class="card" style="width:480px; max-width:90%;">
       <div class="card-header">
-        <span class="card-title">Checkpoint Task Context</span>
-        <button type="button" id="btn-close-checkpoint" class="btn btn-sm btn-ghost">✕</button>
+        <span id="modal-checkpoint-title" class="card-title">Checkpoint Task Context</span>
+        <button type="button" id="btn-close-checkpoint" class="btn btn-sm btn-ghost" aria-label="Close checkpoint modal">✕</button>
       </div>
       <div class="card-body">
         <form id="form-checkpoint" onsubmit="return false;">
@@ -1231,11 +1364,11 @@
   </div>
 
   <!-- Propose Patch Modal -->
-  <div id="modal-propose" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center;">
+  <div id="modal-propose" role="dialog" aria-modal="true" aria-labelledby="modal-propose-title" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center;">
     <div class="card" style="width:540px; max-width:90%;">
       <div class="card-header">
-        <span class="card-title">Propose File Patch</span>
-        <button type="button" id="btn-close-propose" class="btn btn-sm btn-ghost">✕</button>
+        <span id="modal-propose-title" class="card-title">Propose File Patch</span>
+        <button type="button" id="btn-close-propose" class="btn btn-sm btn-ghost" aria-label="Close propose patch modal">✕</button>
       </div>
       <div class="card-body">
         <form id="form-propose" onsubmit="return false;">
@@ -1320,12 +1453,29 @@
         return headers;
       }
 
+      // Actionable Guidance Map for Domain Errors
+      const NEXT_ACTIONS = {
+        path_conflict: 'Review conflicting files in tasks. Rebase or adjust affected paths so changes do not overlap on the same file.',
+        stale_baseline: 'The baseline has advanced. Rebase or re-propose task patches against the latest baseline revision.',
+        unauthorized: 'Authentication failed. Check your Bearer token in the header and verify it has the required role permissions.',
+        unapproved: 'Candidate integration requires explicit human approval. Click "Approve Exact Tree" first.',
+        no_evidence: 'Candidate integration requires passing runner evidence. Run evidence verification (POST /api/validate) first.',
+        candidate_hash_mismatch: 'Submitted evidence or approval tree hash does not match current candidate hash. Re-verify the candidate.',
+        invalid_action: 'Invalid action payload. Ensure required action fields, actor role, and valid JSON are provided.',
+        demo_unavailable_on_worker: 'The deterministic scenario demo runs exclusively on the local server (port 8787).',
+        remote_merge_unavailable: 'Remote Git merge is not exposed directly by the Artifacts binding; use the Git runner atomic CAS protocol to publish.',
+        coordinator_token_not_configured: 'Worker COORDINATOR_TOKEN secret is not set. Configure it before accessing coordinator routes.',
+        NETWORK_ERROR: 'Network request failed. Ensure the server or local workerd instance is running and reachable.',
+        DEMO_ERROR: 'The demo scenario encountered an error during execution. Check the console or logs for details.'
+      };
+
       // Error Display
       const errorBanner = document.getElementById('error-banner');
       const errorCodeSpan = document.getElementById('error-code');
       const errorMsgSpan = document.getElementById('error-msg');
+      const errorActionSpan = document.getElementById('error-action');
       document.getElementById('error-dismiss').addEventListener('click', () => {
-        errorBanner.classList.remove('visible');
+        hideError();
       });
 
       function showError(error, code) {
@@ -1333,11 +1483,23 @@
         errorCodeSpan.appendChild(document.createTextNode(code || 'ERROR'));
         clearElement(errorMsgSpan);
         errorMsgSpan.appendChild(document.createTextNode(error || 'Action failed'));
+
+        if (errorActionSpan) {
+          clearElement(errorActionSpan);
+          const guidance = (code && NEXT_ACTIONS[code]) || 'Inspect the audit log below or server console logs for additional details.';
+          errorActionSpan.appendChild(document.createTextNode(`Next Action: ${guidance}`));
+          errorActionSpan.classList.add('visible');
+        }
+
         errorBanner.classList.add('visible');
       }
 
       function hideError() {
         errorBanner.classList.remove('visible');
+        if (errorActionSpan) {
+          errorActionSpan.classList.remove('visible');
+          clearElement(errorActionSpan);
+        }
       }
 
       // API calls
@@ -1473,8 +1635,46 @@
           modeText.textContent = 'LOCAL SIMULATION';
         }
 
+        const demoButton = document.getElementById('btn-demo');
+        demoButton.disabled = state.mode === 'cloudflare';
+        demoButton.title = state.mode === 'cloudflare'
+          ? 'The deterministic demo runs on the local server; this deployment shows persisted production evidence.'
+          : 'Run the deterministic local scenario';
+
         const revBadge = document.getElementById('rev-badge');
         revBadge.textContent = `REV #${state.revision}`;
+
+        const repoBadge = document.getElementById('repo-badge');
+        if (repoBadge) {
+          if (state.repository) {
+            repoBadge.style.display = 'inline-flex';
+            repoBadge.textContent = `REPO: ${state.repository}`;
+          } else {
+            repoBadge.style.display = 'none';
+          }
+        }
+
+        const refBadge = document.getElementById('ref-badge');
+        if (refBadge) {
+          if (state.ref) {
+            refBadge.style.display = 'inline-flex';
+            refBadge.textContent = `REF: ${state.ref}`;
+          } else {
+            refBadge.style.display = 'none';
+          }
+        }
+
+        const commitBadge = document.getElementById('commit-badge');
+        if (commitBadge) {
+          if (state.commit) {
+            commitBadge.style.display = 'inline-flex';
+            const shortC = state.commit.length > 10 ? `${state.commit.slice(0, 7)}…` : state.commit;
+            commitBadge.textContent = `COMMIT: ${shortC}`;
+            commitBadge.title = state.commit;
+          } else {
+            commitBadge.style.display = 'none';
+          }
+        }
 
         // 2. Objective
         const objDisplay = document.getElementById('objective-text');
@@ -1527,10 +1727,13 @@
         // 4. Candidate Pipeline
         renderCandidateSection(state);
 
-        // 5. Baseline Files List
+        // 5. Publication Receipt (if supplied)
+        renderPublicationReceipt(state);
+
+        // 6. Baseline Files List
         renderBaselineFiles(state.baseline);
 
-        // 6. Events Stream
+        // 7. Events Stream
         renderEvents(state.events);
       }
 
@@ -1558,7 +1761,65 @@
           el('span', { className: 'meta-tag', textContent: `Agent: ${task.agent}` }),
           el('span', { className: 'meta-tag', textContent: `Base Rev: #${task.baseRevision}` })
         ]);
+        if (task.provider) {
+          meta.appendChild(el('span', { className: 'meta-tag', style: 'color:var(--status-cyan);', textContent: `Provider: ${task.provider}` }));
+        }
+        if (task.repository) {
+          meta.appendChild(el('span', { className: 'meta-tag', textContent: `Repo: ${task.repository}` }));
+        }
+        if (task.ref) {
+          meta.appendChild(el('span', { className: 'meta-tag', textContent: `Ref: ${task.ref}` }));
+        }
+        if (task.commit) {
+          const shortC = task.commit.length > 8 ? `${task.commit.slice(0, 7)}…` : task.commit;
+          meta.appendChild(el('span', { className: 'meta-tag', title: task.commit, textContent: `Commit: ${shortC}` }));
+        }
         body.appendChild(meta);
+
+        // Checkpoint Recovery indicator (when API supplies it)
+        const recoveryInfo = task.recovery || task.checkpointRecovery || (task.context && task.context.recoveredFrom ? { recoveredFrom: task.context.recoveredFrom, recoveredAt: task.context.recoveredAt } : null) || (task.recoveredFrom ? { recoveredFrom: task.recoveredFrom, recoveredAt: task.recoveredAt } : null);
+        if (recoveryInfo) {
+          const recBox = el('div', { className: 'recovery-box' }, [
+            el('div', { className: 'recovery-top' }, [
+              el('span', { className: 'recovery-badge', textContent: 'Checkpoint Recovered' }),
+              el('span', {
+                style: 'font-family:var(--font-mono); font-size:10px; color:var(--text-dim);',
+                textContent: recoveryInfo.recoveredAt ? `at ${recoveryInfo.recoveredAt}` : ''
+              })
+            ]),
+            el('div', {
+              className: 'recovery-text',
+              textContent: `Context resumed by replacement agent from checkpoint ${recoveryInfo.recoveredFrom ? '#' + recoveryInfo.recoveredFrom : 'history'}.`
+            })
+          ]);
+          body.appendChild(recBox);
+        }
+
+        // Provider Execution Interval (when API supplies it)
+        const intervals = task.intervals || (task.interval ? [task.interval] : null) || (task.executionInterval ? [task.executionInterval] : null) || (task.startedAt ? [{ startedAt: task.startedAt, endedAt: task.endedAt }] : null);
+        if (intervals && Array.isArray(intervals) && intervals.length > 0) {
+          for (const iv of intervals) {
+            if (!iv || (!iv.startedAt && !iv.start)) continue;
+            const start = iv.startedAt || iv.start;
+            const end = iv.endedAt || iv.end;
+            let durationText = '';
+            if (iv.duration) {
+              durationText = ` (${iv.duration})`;
+            } else if (start && end) {
+              const sec = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 1000);
+              if (!isNaN(sec) && sec >= 0) durationText = ` (${sec}s)`;
+            }
+            const ivBox = el('div', { className: 'interval-box' }, [
+              el('span', { className: 'interval-label', textContent: 'Provider Interval:' }),
+              el('span', {
+                textContent: end
+                  ? `${start} → ${end}${durationText}`
+                  : `Started ${start} (in progress)`
+              })
+            ]);
+            body.appendChild(ivBox);
+          }
+        }
 
         // Intent
         body.appendChild(el('div', { style: 'color:var(--text-muted); font-size:11px;' }, [
@@ -1576,9 +1837,10 @@
         }
 
         // Preserved Context Box (Interruption Recovery)
+        const isRecovered = Boolean(task.context && (task.context.recovered || task.context.recoveredFrom || task.recoveredFrom));
         const ctxBox = el('div', { className: 'context-box' });
         ctxBox.appendChild(el('div', { className: 'context-header' }, [
-          el('span', { textContent: 'Preserved Context (Interruption Recovery)' })
+          el('span', { textContent: isRecovered ? 'Preserved Context (Interruption Recovered ✓)' : 'Preserved Context (Interruption Recovery)' })
         ]));
 
         const summaryText = (task.context && task.context.summary) ? task.context.summary : 'No checkpoint recorded yet.';
@@ -1641,6 +1903,7 @@
         const approvalSummary = document.getElementById('approval-summary');
         const btnIntegrate = document.getElementById('btn-integrate');
         const btnApprove = document.getElementById('btn-approve');
+        const btnEvidence = document.getElementById('btn-run-evidence');
 
         clearElement(candidateHashBox);
         clearElement(diffViewer);
@@ -1658,8 +1921,24 @@
         statusBadge.className = 'badge status-proposed';
 
         const candidate = state.candidate;
+        const cloudMode = state.mode === 'cloudflare';
+        btnEvidence.disabled = cloudMode;
+        btnEvidence.textContent = cloudMode ? 'Await Trusted Runner' : 'Run Evidence (POST /api/validate)';
+        btnEvidence.title = cloudMode ? 'A separately authenticated runner records evidence for the exact candidate.' : 'Run the local fixture validator';
+        btnIntegrate.textContent = cloudMode ? 'Reserve Remote Publication' : 'Integrate to Baseline';
         document.getElementById('candidate-base-rev').textContent = `#${candidate.baseRevision}`;
-        document.getElementById('candidate-tasks-list').textContent = candidate.taskIds.join(', ');
+        const taskListSpan = document.getElementById('candidate-tasks-list');
+        taskListSpan.textContent = candidate.taskIds.join(', ');
+        if (candidate.repository || candidate.ref || candidate.commit) {
+          const extras = [];
+          if (candidate.repository) extras.push(`Repo: ${candidate.repository}`);
+          if (candidate.ref) extras.push(`Ref: ${candidate.ref}`);
+          if (candidate.commit) {
+            const shortCommit = candidate.commit.length > 8 ? `${candidate.commit.slice(0, 7)}…` : candidate.commit;
+            extras.push(`Commit: ${shortCommit}`);
+          }
+          taskListSpan.textContent += ` • [${extras.join(' | ')}]`;
+        }
 
         // Candidate Hash with full text visible on hover
         const hash = candidate.treeHash;
@@ -1732,7 +2011,9 @@
         } else if (candidate.baseRevision !== state.revision) {
           btnIntegrate.title = 'Candidate base revision is stale relative to baseline';
         } else {
-          btnIntegrate.title = 'Integrate candidate into authoritative baseline';
+          btnIntegrate.title = cloudMode
+            ? 'Reserve the current Artifacts branch head for an atomic verified publication'
+            : 'Integrate candidate into authoritative baseline';
         }
       }
 
@@ -1787,6 +2068,75 @@
 
         if (diffCount === 0) {
           container.appendChild(el('div', { className: 'empty-state', textContent: 'No changes between baseline and candidate files.' }));
+        }
+      }
+
+      function renderPublicationReceipt(state) {
+        const receiptStage = document.getElementById('publication-receipt-stage');
+        const receiptGrid = document.getElementById('receipt-grid');
+        if (!receiptStage || !receiptGrid) return;
+
+        const publication = state.publication;
+        const receipt = publication && publication.receipt;
+        if (!receipt) {
+          clearElement(receiptGrid);
+          if (publication && publication.status === 'reserved') {
+            receiptStage.style.display = 'block';
+            const badge = document.getElementById('receipt-idempotent-badge');
+            badge.textContent = 'PUBLICATION RESERVED';
+            badge.className = 'badge status-working';
+            document.getElementById('receipt-ref-badge').textContent = publication.ref;
+            receiptGrid.appendChild(el('div', { className: 'receipt-item' }, [
+              el('span', { className: 'receipt-item-label', textContent: 'Expected Remote Head' }),
+              el('span', { className: 'receipt-item-val', textContent: publication.expectedHead })
+            ]));
+          } else {
+            receiptStage.style.display = 'none';
+          }
+          return;
+        }
+
+        receiptStage.style.display = 'block';
+        clearElement(receiptGrid);
+
+        const idempBadge = document.getElementById('receipt-idempotent-badge');
+        if (idempBadge) {
+          idempBadge.textContent = 'REMOTE REF VERIFIED';
+          idempBadge.className = 'badge status-integrated';
+        }
+
+        const refBadge = document.getElementById('receipt-ref-badge');
+        if (refBadge && receipt.ref) {
+          refBadge.textContent = receipt.ref;
+        }
+
+        const fields = [
+          { label: 'Target Ref', val: receipt.ref },
+          { label: 'Candidate Commit', val: receipt.commit },
+          { label: 'Tree OID', val: receipt.tree },
+          { label: 'Previous Head', val: receipt.previousHead },
+          { label: 'New Head', val: receipt.commit },
+          { label: 'Content SHA-256', val: receipt.contentHash },
+          { label: 'Credential-Free Remote', val: receipt.remote },
+          { label: 'Published At', val: receipt.publishedAt },
+        ];
+
+        for (const f of fields) {
+          if (!f.val) continue;
+          const item = el('div', { className: 'receipt-item' }, [
+            el('span', { className: 'receipt-item-label', textContent: f.label }),
+            el('span', {
+              className: 'receipt-item-val',
+              textContent: f.val,
+              title: 'Click to copy',
+              onclick: () => {
+                if (navigator.clipboard?.writeText) {
+                  navigator.clipboard.writeText(f.val);
+                }
+              }
+            })
+          ]);
+          receiptGrid.appendChild(item);
         }
       }
 
@@ -2025,6 +2375,14 @@
 
       // Run Demo Button
       document.getElementById('btn-demo').addEventListener('click', runDemo);
+
+      // Keyboard support for accessibility (Escape key closes open modals)
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (modalCheckpoint && modalCheckpoint.style.display === 'flex') closeCheckpointModal();
+          if (modalPropose && modalPropose.style.display === 'flex') closeProposeModal();
+        }
+      });
 
       // Initial Fetch
       fetchState();

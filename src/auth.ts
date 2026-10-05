@@ -8,7 +8,7 @@ export interface Credentials {
   AGENT_TOKENS?: string; // secret JSON map of agent ID to token; never returned/logged
 }
 export type Authorization = { ok: true; actor: Actor } | { ok: false; status: number; code: string; message: string };
-const humanOnly = new Set(['create_objective', 'approve', 'integrate']);
+const humanOnly = new Set(['create_objective', 'approve', 'integrate', 'reserve_publication']);
 function equal(a: string, b: string) {
   const length = Math.max(a.length,b.length); let diff = a.length ^ b.length;
   for (let i=0;i<length;i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
@@ -28,7 +28,7 @@ export function authorize(request: Request, env: Credentials, type: string): Aut
   const configured=[env.HUMAN_TOKEN,env.RUNNER_TOKEN,...Object.values(agents)].filter((value):value is string=>!!value);
   if(new Set(configured).size!==configured.length) return deny(503,'invalid_credentials','Roles and agent identities require distinct credentials');
   if(type==='read_state' && env.RUNNER_TOKEN && token && equal(token,env.RUNNER_TOKEN)) return {ok:true,actor:{id:'trusted-runner',role:'runner'}};
-  if(type==='record_evidence') {
+  if(type==='record_evidence' || type==='record_publication') {
     if(!env.RUNNER_TOKEN) return deny(403,'runner_token_not_configured','Trusted runner credential is not configured');
     return token && equal(token,env.RUNNER_TOKEN) ? {ok:true,actor:{id:'trusted-runner',role:'runner'}} : deny(401,'unauthorized','Trusted runner token required');
   }

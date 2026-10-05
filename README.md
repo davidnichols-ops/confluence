@@ -1,64 +1,60 @@
 # Confluence
 
-One shared objective. Concurrent tasks. Context that survives an agent restart. Evidence and human review tied to the exact result being integrated.
+Confluence turns one objective into concurrent, reviewable agent work while preserving interruption context and binding evidence, approval, and remote Git publication to the same exact content hash.
 
-This prototype explores Cloudflare's concurrent-agent collaboration challenge. It uses a pure coordination engine, a local human console, and a Cloudflare Workers/Durable Object adapter with Artifacts repository operations.
+Live deployment: <https://confluence.david-nichols-ops.workers.dev>
 
-## Run locally
+The Cloudflare path uses a Worker gateway, a SQLite Durable Object coordinator, and a persistent Artifacts Git repository. A trusted runner validates candidate bytes, publishes with `git push --force-with-lease`, confirms the advertised remote ref, and records a receipt before the coordinator advances its baseline. Authentication assigns human, runner, and named-agent roles on the server.
+
+## Local run
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:8787. Run the labeled deterministic demo, then inspect task context, proposed changes, candidate evidence and integration history. The local demo simulates agent tasks, prepares an actual Git candidate in an isolated clone, and evaluates JSON fixture behavior against the prepared bytes. It does not invoke coding models or remote Cloudflare Artifacts.
-
-Git commits, trees and validation reports are retained under `.local/candidates/`. Each `.bundle` contains a complete candidate history and can be cloned with `git clone /absolute/path/to/candidate.bundle restored-candidate`. A temporary checkout is removed after validation; the bundle preserves the candidate for independent inspection.
-
-Local state persists in `.local/state.json`. The server serializes mutations and atomically replaces the saved state. Restarting the server preserves task checkpoints.
-
-Set `CONFLUENCE_TOKEN` for a bearer token on local API requests; the UI accepts it. The server binds to loopback, checks Host/Origin and rejects client-supplied evidence. This local console represents a human operator; cloud role separation is a different authentication boundary.
+Open <http://127.0.0.1:8787>. The local scenario is deterministic: it exercises coordination, prepares a real Git candidate in an isolated clone, validates its bytes, and retains a portable bundle. Local state and candidates live under the ignored `.local/` directory.
 
 ## Verification
 
-`node scripts/verify-release.mjs` runs the local suite, TypeScript check and Worker dry build sequentially, capturing raw logs and a JSON summary. Artifacts unit checks use fakes; Git and HTTP integration checks run actual local processes.
-
 ```sh
-npm test
-npm run typecheck
-npm run worker:check
+node scripts/verify-release.mjs
 ```
 
-Passing local tests does not establish Cloudflare runtime behavior, Artifacts availability or large-scale performance. Live platform tests and measured load are required before those claims.
+The verifier runs the full Vitest suite, TypeScript check, and Worker dry build in sequence and writes raw logs under ignored `logs/`. The current verified checkpoint is 84 tests in nine files, followed by clean TypeScript and Worker builds.
 
-## Cloudflare setup boundary
-
-`wrangler.jsonc` binds a SQLite Durable Object and Artifacts namespace. `wrangler types` generates `worker-configuration.d.ts`. Real Artifacts access needs a valid Cloudflare login or API token with the required permissions. Account access was restored after upgrade and an explicit account API token check. Live Artifacts experiments are recorded in EVIDENCE.md; no public Worker has been deployed.
-
-Use separate Worker secrets `HUMAN_TOKEN`, `RUNNER_TOKEN` and `AGENT_TOKENS` (a JSON map from agent ID to token). `COORDINATOR_TOKEN` optionally grants one agent identity, selected by `COORDINATOR_AGENT_ID`. Credentials determine the stored actor identity and role. Missing or ambiguous credentials fail closed. Do not use the local console's shared token as a production authorization design.
-
-The Worker API shares the `{ action: ... }` envelope with the local console. `/api/state` returns an initial State even before an objective exists. `/api/demo` is intentionally local only. Remote `/api/actions` integration returns 501 until a verified Git integration runner is connected; it must not pretend a Durable Object state update published a Git commit.
-
-## Design boundary
-
-Tasks capture their baseline and reasoning checkpoint. Proposed changes carry content preconditions. A candidate must be assembled against the current baseline, validated by a trusted runner and approved by a human for its exact hash before integration.
-
-Intent overlap is advisory. Tests can miss semantic defects. This prototype is conservative about stale bases and overlapping edits, and does not promise automatic semantic merging.
-
-Workers and Artifacts expose repository creation, inspection, forks and scoped tokens. The binding does not supply an application merge implementation. The remote integration boundary must fail closed until a Git-based integration runner can verify and publish the composed commit. No local fixture result is represented as a remote Git merge.
-
-Build ownership and decisions: [BUILD_SPEC.md](BUILD_SPEC.md). Initial research: `discovery/`. Private onboarding snapshots are excluded from version control and must not be published.
-
-## Completion roadmap
-
-See [ROADMAP.md](ROADMAP.md) for ordered milestones, owners, acceptance evidence and remaining work. [docs/PUBLICATION_PROTOCOL.md](docs/PUBLICATION_PROTOCOL.md) describes the verified local bare-repository publisher and the unimplemented remote transport/recovery boundary. [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) and [docs/SUBMISSION_DRAFT.md](docs/SUBMISSION_DRAFT.md) are preparation artifacts, not attestations of a completed contest entry.
-
-Read-only platform access check (explicit account selection prevents inherited account mismatch):
+The real-provider proof is intentionally separate because it invokes installed external coding agents:
 
 ```sh
-node scripts/platform-preflight.mjs --account <account-id>
-# Or supply a private API token file outside version control:
-node scripts/platform-preflight.mjs --account <account-id> --token-file <private-path>
+npx tsx scripts/provider-demo.mjs --out logs/provider-demo
 ```
 
-The probe checks identity and repository listing in namespace default. It never upgrades billing or creates resources. Worker state reads require scoped credentials and use Cache-Control: no-store. ARTIFACTS_REPO can select an isolated repository for platform verification.
+It runs `agy` and Devin concurrently in separate disposable Git worktrees, records bounded output and SHA-256 digests, interrupts one child, and resumes from its atomic checkpoint in a fresh OS process. Missing providers cause an explicit skip; nothing is simulated.
+
+## Cloudflare deployment
+
+`wrangler.jsonc` defines the Worker, Durable Object, static assets, and Artifacts binding. Configure four distinct secrets before deploying:
+
+- `HUMAN_TOKEN`
+- `RUNNER_TOKEN`
+- `COORDINATOR_TOKEN`
+- `AGENT_TOKENS`, a JSON object mapping agent IDs to bearer tokens
+
+```sh
+npx wrangler secret bulk .local/deployment-secrets.json
+npx wrangler deploy
+```
+
+Keep that file private and mode `0600`. The deployed UI accepts one scoped token at a time. Human credentials create objectives/tasks, assemble and approve candidates, and reserve publication. Agent credentials checkpoint and propose. Runner credentials record evidence and the post-push receipt. The coordinator credential manages Artifacts repository operations and short-lived Git tokens.
+
+`publishRemoteCandidate` verifies the candidate bundle, Git commit/tree/parent, exact UTF-8 file content, runner evidence, and human approval before the lease-protected push. It fetches and re-verifies remote bytes for crash-safe idempotent recovery. Bootstrap and minted repository tokens are revoked rather than discarded.
+
+The browser never receives deployment secrets automatically. `/api/state` is private and returns `Cache-Control: no-store`; unauthenticated requests fail closed.
+
+## Evidence and boundaries
+
+[EVIDENCE.md](EVIDENCE.md) records observed results and limitations. [docs/PUBLICATION_PROTOCOL.md](docs/PUBLICATION_PROTOCOL.md) specifies the publication contract. [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) is the recording plan, and [docs/SUBMISSION_DRAFT.md](docs/SUBMISSION_DRAFT.md) contains form-ready copy.
+
+The measured demonstration proves two-provider overlap and one fresh-process recovery. It does not claim massive scale, automatic semantic merging, or that tests can establish arbitrary software correctness. The contest entry, eligibility attestation, personal details, video approval, and acceptance of terms remain human actions.
+
+MIT licensed. See [LICENSE](LICENSE).

@@ -77,6 +77,7 @@ export async function applyAction(state: State, action: Action): Promise<State> 
     const c = base.candidate;
     base.candidate = { ...c, files: { ...c.files }, taskIds: [...c.taskIds], evidence: c.evidence ? { ...c.evidence } : undefined, approval: c.approval ? { ...c.approval } : undefined };
   }
+  if (base.publication) base.publication = { ...base.publication, receipt: base.publication.receipt ? { ...base.publication.receipt } : undefined };
   const task = (id: unknown): Task => {
     const t = base.tasks.find((x) => x.id === id);
     if (!t) throw new DomainError('unknown_task', `unknown task ${String(id)}`);
@@ -142,6 +143,7 @@ export async function applyAction(state: State, action: Action): Promise<State> 
       t.status = 'proposed';
       const prior = base.candidate ? `; prior candidate ${base.candidate.treeHash.slice(0, 8)} invalidated` : '';
       base.candidate = undefined;
+      base.publication = undefined;
       base.events.push(ev('propose', `task ${t.id} proposed ${patches.length} patch(es)${prior}`));
       return base;
     }
@@ -169,6 +171,7 @@ export async function applyAction(state: State, action: Action): Promise<State> 
         }
       }
       base.candidate = { treeHash: await treeHash(files), baseRevision: state.revision, files, taskIds: ids };
+      base.publication = undefined;
       base.events.push(ev('assemble', `candidate ${base.candidate.treeHash.slice(0, 8)} assembled from [${ids.join(', ')}]`));
       return base;
     }
@@ -197,6 +200,60 @@ export async function applyAction(state: State, action: Action): Promise<State> 
       base.events.push(ev('approve', `candidate ${c.treeHash.slice(0, 8)} approved by ${act.id}`));
       return base;
     }
+    case 'reserve_publication': {
+      req(act.role === 'human', 'forbidden', 'only a human can reserve publication');
+      const c = base.candidate;
+      if (!c) throw new DomainError('no_candidate', 'no candidate to publish');
+      req(c.evidence?.passed === true && c.evidence.treeHash === c.treeHash, 'no_evidence', 'passing evidence for the exact candidate is required');
+      req(c.approval?.treeHash === c.treeHash, 'no_approval', 'human approval for the exact candidate is required');
+      const ref = str(a.ref, 'invalid_ref', 'ref');
+      const expectedHead = str(a.expectedHead, 'invalid_head', 'expectedHead');
+      req(/^refs\/heads\/[A-Za-z0-9][A-Za-z0-9._\/-]*$/.test(ref) && !ref.includes('..') && !ref.endsWith('.lock'), 'invalid_ref', 'safe branch ref required');
+      req(/^[0-9a-f]{40}$/.test(expectedHead), 'invalid_head', 'expectedHead must be a lowercase 40-character object id');
+      const current = base.publication;
+      if (current?.status === 'reserved') {
+        req(current.treeHash === c.treeHash && current.ref === ref && current.expectedHead === expectedHead, 'publication_reserved', 'a different publication is already reserved');
+        return base;
+      }
+      base.publication = {treeHash:c.treeHash,baseRevision:c.baseRevision,ref,expectedHead,status:'reserved',reservedBy:act.id};
+      base.events.push(ev('reserve_publication', `candidate ${c.treeHash.slice(0, 8)} reserved for ${ref}`));
+      return base;
+    }
+    case 'record_publication': {
+      req(act.role === 'runner', 'forbidden', 'only a trusted runner can record publication');
+      const p = base.publication;
+      if (!p) throw new DomainError('publication_missing', 'candidate publication is not reserved');
+      const receipt = a.receipt as Record<string, unknown>;
+      req(typeof receipt === 'object' && receipt !== null, 'invalid_receipt', 'publication receipt required');
+      const commit = str(receipt.commit, 'invalid_receipt', 'receipt.commit');
+      const tree = str(receipt.tree, 'invalid_receipt', 'receipt.tree');
+      const contentHash = str(receipt.contentHash, 'invalid_receipt', 'receipt.contentHash');
+      const ref = str(receipt.ref, 'invalid_receipt', 'receipt.ref');
+      const previousHead = str(receipt.previousHead, 'invalid_receipt', 'receipt.previousHead');
+      const remote = str(receipt.remote, 'invalid_receipt', 'receipt.remote');
+      const publishedAt = str(receipt.publishedAt, 'invalid_receipt', 'receipt.publishedAt');
+      if (p.status === 'published') {
+        const prior = p.receipt;
+        req(prior?.commit === commit && prior.tree === tree && prior.contentHash === contentHash
+          && prior.ref === ref && prior.previousHead === previousHead && prior.remote === remote
+          && prior.publishedAt === publishedAt, 'publication_mismatch', 'published receipt differs');
+        return base;
+      }
+      const c = base.candidate;
+      if (!c) throw new DomainError('publication_missing', 'reserved candidate is unavailable');
+      req(p.treeHash === c.treeHash && p.baseRevision === base.revision, 'stale_publication', 'publication reservation is stale');
+      req(contentHash === c.treeHash && ref === p.ref && previousHead === p.expectedHead, 'publication_mismatch', 'receipt does not match reserved candidate/ref/base');
+      req(/^[0-9a-f]{40}$/.test(commit) && /^[0-9a-f]{40}$/.test(tree), 'invalid_receipt', 'receipt commit and tree must be lowercase Git object ids');
+      req(/^https:\/\//.test(remote) && !/[\r\n]/.test(remote) && !remote.includes('@'), 'invalid_receipt', 'receipt remote must be credential-free HTTPS');
+      req(!Number.isNaN(Date.parse(publishedAt)), 'invalid_receipt', 'receipt publishedAt must be an ISO timestamp');
+      base.baseline = { ...c.files };
+      base.revision = state.revision + 1;
+      base.tasks = base.tasks.map((t) => (c.taskIds.includes(t.id) ? { ...t, status: 'integrated' as const } : t));
+      base.publication = {...p,status:'published',receipt:{ref,previousHead,commit,tree,contentHash,remote,publishedAt}};
+      base.candidate = undefined;
+      base.events.push(ev('record_publication', `commit ${commit.slice(0, 12)} published; baseline revision ${base.revision}`));
+      return base;
+    }
     case 'integrate': {
       req(act.role === 'human', 'forbidden', 'only a human can integrate');
       const c = base.candidate;
@@ -210,6 +267,7 @@ export async function applyAction(state: State, action: Action): Promise<State> 
       base.revision = state.revision + 1;
       base.tasks = base.tasks.map((t) => (c.taskIds.includes(t.id) ? { ...t, status: 'integrated' as const } : t));
       base.candidate = undefined;
+      base.publication = undefined;
       base.events.push(ev('integrate', `candidate ${c.treeHash.slice(0, 8)} integrated; baseline revision ${base.revision}`));
       return base;
     }

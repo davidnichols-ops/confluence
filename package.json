@@ -8,7 +8,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "worker:dev": "wrangler dev",
-    "worker:check": "wrangler deploy --dry-run"
+    "worker:check": "wrangler deploy --dry-run",
+    "verify": "node scripts/verify-release.mjs",
+    "provider:demo": "tsx scripts/provider-demo.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

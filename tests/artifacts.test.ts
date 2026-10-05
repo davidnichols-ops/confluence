@@ -13,6 +13,7 @@ class FakeRepo implements ArtifactsRepo {
   disposed = false;
   createTokenCalls = 0;
   forkCalls = 0;
+  revokedTokens: string[] = [];
 
   constructor(
     private readonly repoInfo: { name: string; remote: string; defaultBranch: string },
@@ -36,7 +37,8 @@ class FakeRepo implements ArtifactsRepo {
     return { total: 0, tokens: [] };
   }
 
-  async revokeToken(): Promise<boolean> {
+  async revokeToken(tokenOrId: string): Promise<boolean> {
+    this.revokedTokens.push(tokenOrId);
     return true;
   }
 
@@ -108,7 +110,12 @@ class FakeNamespace implements ArtifactsNamespace {
 describe('ArtifactsAdapter', () => {
   it('confirms absence independently when the remote proxy strips error codes', async () => {
     const ns = new FakeNamespace();
-    ns.get = async () => { throw Object.assign(new Error('unstructured remote exception'), {remote:true}); };
+    const normalGet = ns.get.bind(ns);
+    let first = true;
+    ns.get = async (name) => {
+      if (first) { first = false; throw Object.assign(new Error('unstructured remote exception'), {remote:true}); }
+      return normalGet(name);
+    };
     const adapter = new ArtifactsAdapter({ artifacts: ns, repoName: 'missing' });
     expect((await adapter.ensureRepo()).created).toBe(true);
     expect(ns.createCalls).toBe(1);
@@ -134,6 +141,7 @@ describe('ArtifactsAdapter', () => {
     expect(result.name).toBe('confluence-baseline');
     expect(result.remote).toContain('confluence-baseline');
     expect(JSON.stringify(result)).not.toContain('initial-create-token-secret');
+    expect(ns.repos.get('confluence-baseline')?.revokedTokens).toEqual(['initial-create-token-secret']);
   });
 
   it('reuses an existing repo without creating', async () => {
@@ -175,11 +183,13 @@ describe('ArtifactsAdapter', () => {
     const ns = new FakeNamespace();
     const repo = new FakeRepo({ name: 'r', remote: 'remote', defaultBranch: 'main' });
     ns.repos.set('r', repo);
+    ns.repos.set('task-1-scratch', new FakeRepo({ name: 'task-1-scratch', remote: 'https://artifacts.example.com/task-1-scratch.git', defaultBranch: 'main' }));
     const adapter = new ArtifactsAdapter({ artifacts: ns, repoName: 'r' });
     const forked = await adapter.fork('task-1-scratch', { description: 'task scratch', defaultBranchOnly: true });
     expect(repo.forkCalls).toBe(1);
     expect(forked.name).toBe('task-1-scratch');
     expect(JSON.stringify(forked)).not.toContain('initial-fork-token-secret');
+    expect(ns.repos.get('task-1-scratch')?.revokedTokens).toEqual(['initial-fork-token-secret']);
   });
 
   it('reads file text and returns null for missing paths', async () => {

@@ -12,5 +12,6 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Coordinator"] }],
   "artifacts": [{ "binding": "ARTIFACTS", "namespace": "default" }],
+  "vars": { "ARTIFACTS_REPO": "confluence-baseline", "COORDINATOR_AGENT_ID": "coordinator" },
   "observability": { "enabled": true }
 }

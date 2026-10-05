@@ -160,7 +160,7 @@ export class ArtifactsAdapter {
         description: this.description,
         setDefaultBranch: 'main',
       });
-      void created.token;
+      await this.revokeBootstrapToken(created.name, created.token);
       return { name: created.name, remote: created.remote, defaultBranch: created.defaultBranch, created: true };
     }
     using repo = handle;
@@ -178,10 +178,15 @@ export class ArtifactsAdapter {
     return await repo.createToken(scope, ttlSeconds);
   }
 
+  async revokeToken(tokenOrId: string): Promise<boolean> {
+    using repo = await this.getRepo();
+    return await repo.revokeToken(tokenOrId);
+  }
+
   async fork(newName: string, opts?: { description?: string; readOnly?: boolean; defaultBranchOnly?: boolean }): Promise<ArtifactsCreateRepoResult> {
     using repo = await this.getRepo();
     const forked = await repo.fork(newName, opts);
-    void forked.token;
+    await this.revokeBootstrapToken(forked.name, forked.token);
     return { name: forked.name, remote: forked.remote, defaultBranch: forked.defaultBranch };
   }
 
@@ -213,6 +218,20 @@ export class ArtifactsAdapter {
       cursor = result.cursor;
     }
     throw new Error('Namespace listing exceeded verification bound; repository absence is unknown');
+  }
+
+  private async revokeBootstrapToken(repoName: string, token?: string): Promise<void> {
+    if (!token) return;
+    let repo: ArtifactsRepo;
+    try {
+      repo = await this.artifacts.get(repoName);
+    } catch (err) {
+      throw new Error(`created artifacts repo "${repoName}" but could not revoke its bootstrap token: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    using disposable = repo;
+    if (!(await disposable.revokeToken(token))) {
+      throw new Error(`created artifacts repo "${repoName}" but its bootstrap token was not revoked`);
+    }
   }
 
   private async getRepo(): Promise<ArtifactsRepo> {
