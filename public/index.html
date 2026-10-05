@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confluence — Concurrent Agent Collaboration</title>
+  <style>
+    :root {
+      --bg-app: #0e1117;
+      --bg-header: #141824;
+      --bg-surface: #181d2c;
+      --bg-card: #1f2537;
+      --bg-subtle: #262e43;
+      --bg-input: #11141d;
+      --border-subtle: #2e374e;
+      --border-focus: #f38020;
+      --text-main: #f3f5f9;
+      --text-muted: #9ba6bc;
+      --text-dim: #65728d;
+      --accent-orange: #f38020;
+      --accent-orange-hover: #ff933b;
+      --accent-orange-dim: rgba(243, 128, 32, 0.12);
+      --accent-orange-border: rgba(243, 128, 32, 0.4);
+      --status-green: #10b981;
+      --status-green-dim: rgba(16, 185, 129, 0.12);
+      --status-green-border: rgba(16, 185, 129, 0.35);
+      --status-amber: #f59e0b;
+      --status-amber-dim: rgba(245, 158, 11, 0.12);
+      --status-amber-border: rgba(245, 158, 11, 0.35);
+      --status-red: #ef4444;
+      --status-red-dim: rgba(239, 68, 68, 0.12);
+      --status-red-border: rgba(239, 68, 68, 0.35);
+      --status-blue: #3b82f6;
+      --status-purple: #a855f7;
+      --status-cyan: #06b6d4;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .app-header {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--accent-orange-dim);
+      border: 1px solid var(--accent-orange-border);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-orange);
+      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-name {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-name span.accent {
+      color: var(--accent-orange);
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+    }
+
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border: 1px solid transparent;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .badge-local {
+      background: rgba(14, 165, 233, 0.12);
+      border-color: rgba(14, 165, 233, 0.3);
+      color: #38bdf8;
+    }
+    .badge-local .badge-dot { background: #38bdf8; }
+
+    .badge-cf {
+      background: var(--accent-orange-dim);
+      border-color: var(--accent-orange-border);
+      color: var(--accent-orange);
+    }
+    .badge-cf .badge-dot { background: var(--accent-orange); }
+
+    .badge-rev {
+      background: var(--bg-card);
+      border-color: var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    .auth-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 2px 8px;
+    }
+
+    .auth-box label {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .auth-box input {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      width: 140px;
+      outline: none;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-main);
+      transition: all 0.15s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--bg-subtle);
+      border-color: var(--border-focus);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent-orange);
+      border-color: var(--accent-orange);
+      color: #0b0d12;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-orange-hover);
+      border-color: var(--accent-orange-hover);
+    }
+
+    .btn-success {
+      background: var(--status-green);
+      border-color: var(--status-green);
+      color: #051a11;
+      font-weight: 700;
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #19c38c;
+    }
+
+    .btn-sm {
+      padding: 3px 8px;
+      font-size: 11px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    /* Architecture banner */
+    .arch-banner {
+      background: #11151f;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 8px 20px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .arch-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .arch-pillar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .arch-pillar strong {
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    /* Error Banner */
+    .error-banner {
+      background: var(--status-red-dim);
+      border-bottom: 1px solid var(--status-red-border);
+      color: #fca5a5;
+      padding: 10px 20px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .error-banner.visible {
+      display: flex;
+    }
+
+    .error-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .error-code {
+      background: rgba(239, 68, 68, 0.3);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+    }
+
+    /* Demo Outcomes Banner */
+    .demo-banner {
+      background: #151b29;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 20px;
+      display: none;
+    }
+
+    .demo-banner.visible {
+      display: block;
+    }
+
+    .demo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .demo-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-orange);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-outcomes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 8px;
+    }
+
+    .outcome-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    .outcome-card.accepted {
+      border-left: 3px solid var(--status-green);
+    }
+
+    .outcome-card.rejected {
+      border-left: 3px solid var(--status-red);
+    }
+
+    .outcome-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .outcome-label {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .outcome-reason {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Main 3-column layout */
+    .main-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 360px 1fr 340px;
+      gap: 1px;
+      background: var(--border-subtle);
+      min-height: calc(100vh - 110px);
+    }
+
+    @media (max-width: 1200px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .lane {
+      background: var(--bg-app);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      max-height: calc(100vh - 100px);
+    }
+
+    .lane-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .lane-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lane-count {
+      font-size: 11px;
+      background: var(--bg-subtle);
+      color: var(--text-dim);
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+    }
+
+    .lane-content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .card-header {
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .card-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Objective Box */
+    .objective-display {
+      font-size: 13px;
+      color: var(--text-main);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent-orange);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      line-height: 1.4;
+    }
+
+    /* Task Card */
+    .task-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      transition: border-color 0.15s ease;
+    }
+
+    .task-card:hover {
+      border-color: #3f4a66;
+    }
+
+    .task-card-header {
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .task-id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .status-working {
+      background: var(--status-amber-dim);
+      border-color: var(--status-amber-border);
+      color: var(--status-amber);
+    }
+
+    .status-proposed {
+      background: rgba(59, 130, 246, 0.12);
+      border-color: rgba(59, 130, 246, 0.35);
+      color: #60a5fa;
+    }
+
+    .status-integrated {
+      background: var(--status-green-dim);
+      border-color: var(--status-green-border);
+      color: var(--status-green);
+    }
+
+    .task-body {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-dim);
+    }
+
+    .paths-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .path-pill {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      background: var(--bg-subtle);
+      color: #cbd5e1;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    /* Preserved Context Box (Interruption Recovery) */
+    .context-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .context-header {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-orange);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .context-summary {
+      color: var(--text-main);
+      font-size: 11px;
+    }
+
+    .context-next {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .context-next strong {
+      color: var(--text-main);
+    }
+
+    .context-notes {
+      margin-left: 14px;
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Forms & Inputs */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-control {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      padding: 6px 8px;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--border-focus);
+    }
+
+    textarea.form-control {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .form-panel.active {
+      display: block;
+    }
+
+    /* Candidate & Pipeline Section */
+    .pipeline-stage {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .pipeline-header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pipeline-step {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-orange);
+      text-transform: uppercase;
+    }
+
+    .hash-badge {
+      font-family: var(--font-mono);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #38bdf8;
+      cursor: pointer;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .hash-badge:hover {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .hash-tooltip {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #090b10;
+      color: #f8fafc;
+      border: 1px solid var(--border-focus);
+      padding: 5px 9px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.15s ease;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .hash-badge:hover .hash-tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Diff Viewer */
+    .diff-container {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      max-height: 280px;
+      line-height: 1.45;
+    }
+
+    .diff-file-header {
+      background: var(--bg-subtle);
+      padding: 4px 10px;
+      font-weight: 700;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .diff-line {
+      padding: 1px 10px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .diff-add {
+      background: rgba(16, 185, 129, 0.12);
+      color: #6ee7b7;
+    }
+
+    .diff-del {
+      background: rgba(239, 68, 68, 0.12);
+      color: #fca5a5;
+    }
+
+    .diff-ctx {
+      color: var(--text-dim);
+    }
+
+    /* Gate Card */
+    .gate-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+    }
+
+    .gate-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .gate-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .gate-detail {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Events timeline */
+    .events-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .event-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+    }
+
+    .event-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .event-seq {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .actor-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .actor-human { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+    .actor-agent { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .actor-runner { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+
+    .event-msg {
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      word-break: break-word;
+    }
+
+    /* Checkbox list for assemble */
+    .task-select-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 150px;
+      overflow-y: auto;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+    }
+
+    .task-select-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .task-select-item input[type="checkbox"] {
+      accent-color: var(--accent-orange);
+    }
+
+    /* Baseline files list */
+    .file-tree-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .file-tree-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 16px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+      font-style: italic;
+    }
+    @media (max-width: 1100px) {
+      .app-header, .brand-section, .header-actions, .arch-banner { flex-wrap: wrap; gap: 10px; }
+      .app-header { position: static; }
+      .main-layout { grid-template-columns: minmax(0, 1fr); }
+      .lane { min-width: 0; max-height: none; }
+      .arch-pillar { min-width: 0; align-items: flex-start; }
+      .arch-info { min-width: 0; }
+      .header-actions { max-width: 100%; }
+      .brand-section { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Application Bar -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon">C</div>
+      <div class="brand-titles">
+        <div class="brand-name">CONFLUENCE <span class="accent">// CORE</span></div>
+        <div class="brand-sub">Concurrent Multi-Agent Collaboration Engine</div>
+      </div>
+      <div class="system-status">
+        <div id="mode-badge" class="badge badge-local">
+          <span class="badge-dot"></span>
+          <span id="mode-text">LOCAL SIMULATION</span>
+        </div>
+        <div id="rev-badge" class="badge badge-rev">REV #0</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="auth-box">
+        <label for="auth-token">Bearer</label>
+        <input type="password" id="auth-token" placeholder="Optional token" autocomplete="off" />
+      </div>
+      <button id="btn-refresh" class="btn btn-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+        Refresh
+      </button>
+      <button id="btn-demo" class="btn btn-sm btn-primary">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Run Scenario Demo
+      </button>
+    </div>
+  </header>
+
+  <!-- Architectural Boundary Notice -->
+  <aside class="arch-banner">
+    <div class="arch-info">
+      <div class="arch-pillar">
+        <strong>BOUNDARY NOTICE:</strong>
+        <span>Local simulation and Cloudflare execution operate on the exact same core contracts.</span>
+      </div>
+      <div class="arch-pillar">
+        <strong>LOCAL:</strong>
+        <span>Persisted state & fixture test runner. No remote Artifacts claims.</span>
+      </div>
+      <div class="arch-pillar">
+        <strong>CLOUDFLARE:</strong>
+        <span>Workers + Durable Objects with Cloudflare Artifacts adapter. Mutation tokens required.</span>
+      </div>
+    </div>
+    <div class="arch-pillar">
+      <span style="font-family: var(--font-mono); color: var(--accent-orange);">EXACT-CANDIDATE REVIEW</span>
+    </div>
+  </aside>
+
+  <!-- System Error Toast / Banner -->
+  <div id="error-banner" class="error-banner">
+    <div class="error-left">
+      <span id="error-code" class="error-code">ERROR</span>
+      <span id="error-msg">An unexpected error occurred.</span>
+    </div>
+    <button id="error-dismiss" class="btn btn-sm btn-ghost" style="color: #fca5a5;">Dismiss</button>
+  </div>
+
+  <!-- Scenario Demo Outcomes Drawer -->
+  <div id="demo-banner" class="demo-banner">
+    <div class="demo-header">
+      <div class="demo-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+        Deterministic Demo Scenario Outcomes
+      </div>
+      <button id="demo-dismiss" class="btn btn-sm btn-ghost">Close</button>
+    </div>
+    <div id="demo-outcomes-grid" class="demo-outcomes-grid"></div>
+  </div>
+
+  <!-- Main 3-Column Dashboard Layout -->
+  <main class="main-layout">
+
+    <!-- Column 1: Objectives & Concurrent Task Lanes -->
+    <section class="lane" id="lane-tasks">
+      <div class="lane-header">
+        <div class="lane-title">
+          <span>Objective & Tasks</span>
+          <span id="task-count" class="lane-count">0</span>
+        </div>
+        <button id="btn-toggle-new-task" class="btn btn-sm btn-primary">+ Task</button>
+      </div>
+
+      <div class="lane-content">
+        <!-- Objective Display -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Shared Objective</span>
+            <button id="btn-edit-obj" class="btn btn-sm btn-ghost">Edit</button>
+          </div>
+          <div class="card-body">
+            <div id="objective-text" class="objective-display">No shared objective defined.</div>
+            <!-- Collapsible Edit Objective Form -->
+            <form id="form-objective" class="form-panel" onsubmit="return false;">
+              <div class="form-group">
+                <label for="input-obj">New Objective Statement</label>
+                <input type="text" id="input-obj" class="form-control" placeholder="e.g. Implement resilient token auth and audit logging" />
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:6px;">
+                <button type="button" id="btn-cancel-obj" class="btn btn-sm">Cancel</button>
+                <button type="submit" id="btn-save-obj" class="btn btn-sm btn-primary">Save Objective</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Collapsible Create Task Form -->
+        <form id="form-create-task" class="form-panel" onsubmit="return false;">
+          <div style="font-weight:700; font-size:12px; margin-bottom:8px; color:var(--accent-orange);">Create Concurrent Task</div>
+          <div class="form-group">
+            <label for="task-input-id">Task ID</label>
+            <input type="text" id="task-input-id" class="form-control" placeholder="e.g. task-auth-hardening" />
+          </div>
+          <div class="form-group">
+            <label for="task-input-title">Title</label>
+            <input type="text" id="task-input-title" class="form-control" placeholder="e.g. Add token expiration and timing-safe check" />
+          </div>
+          <div class="form-group">
+            <label for="task-input-agent">Agent ID</label>
+            <input type="text" id="task-input-agent" class="form-control" placeholder="e.g. devin-auth-specialist" />
+          </div>
+          <div class="form-group">
+            <label for="task-input-intent">Intent Description</label>
+            <input type="text" id="task-input-intent" class="form-control" placeholder="e.g. Prevent timing side-channel attacks on tokens" />
+          </div>
+          <div class="form-group">
+            <label for="task-input-paths">Affected Paths (comma separated)</label>
+            <input type="text" id="task-input-paths" class="form-control" placeholder="e.g. src/auth.ts, src/types.ts" />
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:10px;">
+            <button type="button" id="btn-cancel-task" class="btn btn-sm">Cancel</button>
+            <button type="submit" id="btn-submit-task" class="btn btn-sm btn-primary">Create Task</button>
+          </div>
+        </form>
+
+        <!-- Active Tasks List -->
+        <div id="tasks-container" style="display:flex; flex-direction:column; gap:12px;"></div>
+      </div>
+    </section>
+
+    <!-- Column 2: Candidate Assembly, Evidence & Integration Pipeline -->
+    <section class="lane" id="lane-candidate">
+      <div class="lane-header">
+        <div class="lane-title">
+          <span>Candidate Integration Pipeline</span>
+          <span id="candidate-status-badge" class="badge badge-rev">IDLE</span>
+        </div>
+      </div>
+
+      <div class="lane-content">
+        <!-- Stage 1: Assemble -->
+        <div class="pipeline-stage">
+          <div class="pipeline-header">
+            <span class="pipeline-step">Stage 1: Assemble Proposed Patches</span>
+          </div>
+          <div class="card-body">
+            <p style="color:var(--text-muted); font-size:12px;">
+              Select proposed tasks to assemble against current baseline. Uncommitted changes and conflicts reject automatically.
+            </p>
+            <div id="assemble-task-selector" class="task-select-list"></div>
+            <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+              <button id="btn-assemble" class="btn btn-sm btn-primary">Assemble Selected Tasks</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage 2: Active Candidate & Exact Tree Hash -->
+        <div id="candidate-section" class="pipeline-stage" style="display:none;">
+          <div class="pipeline-header">
+            <span class="pipeline-step">Stage 2: Candidate Sandbox</span>
+            <div id="candidate-hash-container"></div>
+          </div>
+          <div class="card-body">
+            <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-muted);">
+              <span>Base Revision: <strong id="candidate-base-rev" style="color:var(--text-main);">#0</strong></span>
+              <span>•</span>
+              <span>Tasks: <span id="candidate-tasks-list" style="font-family:var(--font-mono); color:#cbd5e1;"></span></span>
+            </div>
+
+            <!-- Candidate Diff Viewer -->
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-dim); margin-top:4px;">
+              Synthesized File Changes vs Baseline
+            </div>
+            <div id="candidate-diff-viewer" class="diff-container"></div>
+
+            <!-- Stage 3: Evidence Gate -->
+            <div class="gate-row" style="margin-top:10px;">
+              <div class="gate-meta">
+                <div class="gate-label">Evidence Verification Gate</div>
+                <div id="evidence-summary" class="gate-detail">No trusted evidence executed yet.</div>
+              </div>
+              <button id="btn-run-evidence" class="btn btn-sm btn-primary">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Run Evidence (POST /api/validate)
+              </button>
+            </div>
+
+            <!-- Evidence Checks List -->
+            <div id="evidence-checks-container" style="display:none; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:8px 10px;">
+              <div style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--status-green); margin-bottom:4px;">Verified Checks:</div>
+              <ul id="evidence-checks-list" style="margin-left:16px; font-family:var(--font-mono); font-size:11px; color:#cbd5e1;"></ul>
+            </div>
+
+            <!-- Stage 4: Human Review & Approval Gate -->
+            <div class="gate-row">
+              <div class="gate-meta">
+                <div class="gate-label">Human Review & Sign-Off Gate</div>
+                <div id="approval-summary" class="gate-detail">Awaiting explicit human approval of exact tree hash.</div>
+              </div>
+              <button id="btn-approve" class="btn btn-sm">Approve Exact Tree</button>
+            </div>
+
+            <!-- Stage 5: Baseline Integration -->
+            <div class="gate-row" style="border-color:var(--status-green-border); background:rgba(16, 185, 129, 0.04);">
+              <div class="gate-meta">
+                <div class="gate-label" style="color:var(--status-green);">Baseline Integration</div>
+                <div class="gate-detail">Advances baseline revision and marks tasks integrated.</div>
+              </div>
+              <button id="btn-integrate" class="btn btn-sm btn-success" disabled>Integrate to Baseline</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Integrated Baseline Files -->
+        <div class="pipeline-stage">
+          <div class="pipeline-header">
+            <span class="pipeline-step" style="color:var(--text-muted);">Current Integrated Baseline</span>
+            <span id="baseline-file-count" class="badge badge-rev">0 Files</span>
+          </div>
+          <div class="card-body">
+            <div id="baseline-files-list" class="file-tree-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 3: Immutable Event Timeline & Audit Trail -->
+    <section class="lane" id="lane-events">
+      <div class="lane-header">
+        <div class="lane-title">
+          <span>Audit Log & Events</span>
+          <span id="event-count" class="lane-count">0</span>
+        </div>
+      </div>
+      <div class="lane-content">
+        <div id="events-container" class="events-stream"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modals & Overlays (pure DOM, no external dependencies) -->
+  <!-- Checkpoint Modal -->
+  <div id="modal-checkpoint" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center;">
+    <div class="card" style="width:480px; max-width:90%;">
+      <div class="card-header">
+        <span class="card-title">Checkpoint Task Context</span>
+        <button type="button" id="btn-close-checkpoint" class="btn btn-sm btn-ghost">✕</button>
+      </div>
+      <div class="card-body">
+        <form id="form-checkpoint" onsubmit="return false;">
+          <input type="hidden" id="cp-task-id" />
+          <div class="form-group">
+            <label for="cp-summary">Context Summary (Reasoning & Progress)</label>
+            <textarea id="cp-summary" class="form-control" rows="2" placeholder="What progress was made and why?"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="cp-next">Next Immediate Step</label>
+            <input type="text" id="cp-next" class="form-control" placeholder="What should the agent or replacement do next?" />
+          </div>
+          <div class="form-group">
+            <label for="cp-notes">Notes / Invariants (one per line)</label>
+            <textarea id="cp-notes" class="form-control" rows="3" placeholder="Bullet notes or key constraints"></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:10px;">
+            <button type="button" id="btn-cancel-cp" class="btn btn-sm">Cancel</button>
+            <button type="submit" id="btn-submit-cp" class="btn btn-sm btn-primary">Save Checkpoint</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Propose Patch Modal -->
+  <div id="modal-propose" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center;">
+    <div class="card" style="width:540px; max-width:90%;">
+      <div class="card-header">
+        <span class="card-title">Propose File Patch</span>
+        <button type="button" id="btn-close-propose" class="btn btn-sm btn-ghost">✕</button>
+      </div>
+      <div class="card-body">
+        <form id="form-propose" onsubmit="return false;">
+          <input type="hidden" id="prop-task-id" />
+          <div class="form-group">
+            <label for="prop-path">Target File Path</label>
+            <input type="text" id="prop-path" class="form-control" placeholder="e.g. src/auth.ts" />
+          </div>
+          <div class="form-group">
+            <label for="prop-before">Before Content (leave empty if creating a new file)</label>
+            <textarea id="prop-before" class="form-control" rows="4" placeholder="Exact file text before modification"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="prop-after">After Content (leave empty if deleting file)</label>
+            <textarea id="prop-after" class="form-control" rows="4" placeholder="Exact file text after modification"></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:10px;">
+            <button type="button" id="btn-cancel-prop" class="btn btn-sm">Cancel</button>
+            <button type="submit" id="btn-submit-prop" class="btn btn-sm btn-primary">Propose Patch</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // Application State
+      let currentState = null;
+
+      // Safe DOM construction utility: all dynamic content escaped via native DOM APIs
+      function el(tag, attrs, children) {
+        const node = document.createElement(tag);
+        if (attrs) {
+          for (const [k, v] of Object.entries(attrs)) {
+            if (v === null || v === undefined) continue;
+            if (k === 'className') node.className = v;
+            else if (k === 'textContent') node.textContent = v;
+            else if (k.startsWith('on') && typeof v === 'function') {
+              node.addEventListener(k.slice(2).toLowerCase(), v);
+            } else {
+              node.setAttribute(k, v);
+            }
+          }
+        }
+        if (children) {
+          const list = Array.isArray(children) ? children : [children];
+          for (const child of list) {
+            if (child === null || child === undefined) continue;
+            if (typeof child === 'string' || typeof child === 'number') {
+              node.appendChild(document.createTextNode(String(child)));
+            } else if (child instanceof Node) {
+              node.appendChild(child);
+            }
+          }
+        }
+        return node;
+      }
+
+      function clearElement(node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      // Session Token Management
+      const tokenInput = document.getElementById('auth-token');
+      const savedToken = sessionStorage.getItem('confluence_token');
+      if (savedToken) tokenInput.value = savedToken;
+      tokenInput.addEventListener('input', () => {
+        sessionStorage.setItem('confluence_token', tokenInput.value.trim());
+      });
+
+      function getAuthHeaders() {
+        const token = tokenInput.value.trim();
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        return headers;
+      }
+
+      // Error Display
+      const errorBanner = document.getElementById('error-banner');
+      const errorCodeSpan = document.getElementById('error-code');
+      const errorMsgSpan = document.getElementById('error-msg');
+      document.getElementById('error-dismiss').addEventListener('click', () => {
+        errorBanner.classList.remove('visible');
+      });
+
+      function showError(error, code) {
+        clearElement(errorCodeSpan);
+        errorCodeSpan.appendChild(document.createTextNode(code || 'ERROR'));
+        clearElement(errorMsgSpan);
+        errorMsgSpan.appendChild(document.createTextNode(error || 'Action failed'));
+        errorBanner.classList.add('visible');
+      }
+
+      function hideError() {
+        errorBanner.classList.remove('visible');
+      }
+
+      // API calls
+      async function fetchState() {
+        try {
+          hideError();
+          const res = await fetch('/api/state', {
+            headers: getAuthHeaders()
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showError(data.error || `HTTP ${res.status}`, data.code || `HTTP_${res.status}`);
+            return;
+          }
+          const state = await res.json();
+          renderState(state);
+        } catch (err) {
+          showError(err.message, 'NETWORK_ERROR');
+        }
+      }
+
+      async function postAction(action) {
+        try {
+          hideError();
+          const res = await fetch('/api/actions', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ action })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            showError(data.error || `HTTP ${res.status}`, data.code || `HTTP_${res.status}`);
+            return null;
+          }
+          renderState(data);
+          return data;
+        } catch (err) {
+          showError(err.message, 'NETWORK_ERROR');
+          return null;
+        }
+      }
+
+      async function postValidate() {
+        try {
+          hideError();
+          const res = await fetch('/api/validate', {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            showError(data.error || `HTTP ${res.status}`, data.code || `HTTP_${res.status}`);
+            return null;
+          }
+          // server returns updated state
+          const nextState = data.state || data;
+          renderState(nextState);
+          return nextState;
+        } catch (err) {
+          showError(err.message, 'NETWORK_ERROR');
+          return null;
+        }
+      }
+
+      async function runDemo() {
+        const btn = document.getElementById('btn-demo');
+        btn.disabled = true;
+        hideError();
+        try {
+          const res = await fetch('/api/demo', {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            showError(data.error || `HTTP ${res.status}`, data.code || `HTTP_${res.status}`);
+            return;
+          }
+          // Support either State directly or envelope { state, outcomes }
+          const nextState = data.state ? data.state : data;
+          renderState(nextState);
+
+          if (data.outcomes && Array.isArray(data.outcomes)) {
+            renderDemoOutcomes(data.outcomes);
+          }
+        } catch (err) {
+          showError(err.message, 'DEMO_ERROR');
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      function renderDemoOutcomes(outcomes) {
+        const banner = document.getElementById('demo-banner');
+        const grid = document.getElementById('demo-outcomes-grid');
+        clearElement(grid);
+
+        for (const out of outcomes) {
+          const card = el('div', {
+            className: `outcome-card ${out.accepted ? 'accepted' : 'rejected'}`
+          }, [
+            el('div', { className: 'outcome-top' }, [
+              el('span', { className: 'outcome-label', textContent: out.label || 'Task' }),
+              el('span', {
+                className: `badge ${out.accepted ? 'status-integrated' : 'status-working'}`,
+                textContent: out.accepted ? 'ACCEPTED' : 'REJECTED'
+              })
+            ]),
+            el('div', { className: 'outcome-reason', textContent: out.reason || '' })
+          ]);
+          grid.appendChild(card);
+        }
+        banner.classList.add('visible');
+      }
+
+      document.getElementById('demo-dismiss').addEventListener('click', () => {
+        document.getElementById('demo-banner').classList.remove('visible');
+      });
+
+      // Render State
+      function renderState(state) {
+        if (!state) return;
+        currentState = state;
+
+        // 1. Header Badges
+        const modeBadge = document.getElementById('mode-badge');
+        const modeText = document.getElementById('mode-text');
+        if (state.mode === 'cloudflare') {
+          modeBadge.className = 'badge badge-cf';
+          modeText.textContent = 'CLOUDFLARE WORKER';
+        } else {
+          modeBadge.className = 'badge badge-local';
+          modeText.textContent = 'LOCAL SIMULATION';
+        }
+
+        const revBadge = document.getElementById('rev-badge');
+        revBadge.textContent = `REV #${state.revision}`;
+
+        // 2. Objective
+        const objDisplay = document.getElementById('objective-text');
+        clearElement(objDisplay);
+        objDisplay.appendChild(document.createTextNode(state.objective || 'No shared objective set.'));
+        const objectiveButton = document.getElementById('btn-edit-obj');
+        objectiveButton.textContent = state.objective ? 'Set' : 'Create';
+        objectiveButton.disabled = Boolean(state.objective);
+
+        // 3. Tasks Lane
+        const taskCount = document.getElementById('task-count');
+        taskCount.textContent = String(state.tasks ? state.tasks.length : 0);
+
+        const tasksContainer = document.getElementById('tasks-container');
+        clearElement(tasksContainer);
+
+        const assembleSelector = document.getElementById('assemble-task-selector');
+        clearElement(assembleSelector);
+
+        if (!state.tasks || state.tasks.length === 0) {
+          tasksContainer.appendChild(el('div', { className: 'empty-state', textContent: 'No active tasks yet. Click + Task to create one.' }));
+          assembleSelector.appendChild(el('div', { className: 'empty-state', textContent: 'No proposed tasks available.' }));
+        } else {
+          let proposedCount = 0;
+          for (const task of state.tasks) {
+            // Render Task Card
+            const taskCard = renderTaskCard(task);
+            tasksContainer.appendChild(taskCard);
+
+            // Assemble selector item
+            if (task.status === 'proposed') {
+              proposedCount++;
+              const label = el('label', { className: 'task-select-item' }, [
+                el('input', {
+                  type: 'checkbox',
+                  value: task.id,
+                  checked: state.candidate && state.candidate.taskIds && state.candidate.taskIds.includes(task.id) ? 'checked' : null
+                }),
+                el('span', { style: 'font-weight:600; color:var(--text-main);', textContent: task.title }),
+                el('span', { className: 'meta-tag', textContent: task.id })
+              ]);
+              assembleSelector.appendChild(label);
+            }
+          }
+          if (proposedCount === 0) {
+            assembleSelector.appendChild(el('div', { className: 'empty-state', textContent: 'No tasks currently in "proposed" status. Propose patches on a task first.' }));
+          }
+        }
+
+        // 4. Candidate Pipeline
+        renderCandidateSection(state);
+
+        // 5. Baseline Files List
+        renderBaselineFiles(state.baseline);
+
+        // 6. Events Stream
+        renderEvents(state.events);
+      }
+
+      function renderTaskCard(task) {
+        const card = el('div', { className: 'task-card' });
+
+        // Header
+        const header = el('div', { className: 'task-card-header' }, [
+          el('div', { style: 'display:flex; align-items:center; gap:8px;' }, [
+            el('span', { className: 'task-id', textContent: task.id }),
+            el('span', { className: 'card-title', textContent: task.title })
+          ]),
+          el('span', {
+            className: `badge status-${task.status}`,
+            textContent: task.status
+          })
+        ]);
+        card.appendChild(header);
+
+        // Body
+        const body = el('div', { className: 'task-body' });
+
+        // Meta tags
+        const meta = el('div', { className: 'task-meta' }, [
+          el('span', { className: 'meta-tag', textContent: `Agent: ${task.agent}` }),
+          el('span', { className: 'meta-tag', textContent: `Base Rev: #${task.baseRevision}` })
+        ]);
+        body.appendChild(meta);
+
+        // Intent
+        body.appendChild(el('div', { style: 'color:var(--text-muted); font-size:11px;' }, [
+          el('strong', { style: 'color:var(--text-main);', textContent: 'Intent: ' }),
+          document.createTextNode(task.intent || 'None')
+        ]));
+
+        // Paths
+        if (task.paths && task.paths.length > 0) {
+          const pathsContainer = el('div', { className: 'paths-list' });
+          for (const p of task.paths) {
+            pathsContainer.appendChild(el('span', { className: 'path-pill', textContent: p }));
+          }
+          body.appendChild(pathsContainer);
+        }
+
+        // Preserved Context Box (Interruption Recovery)
+        const ctxBox = el('div', { className: 'context-box' });
+        ctxBox.appendChild(el('div', { className: 'context-header' }, [
+          el('span', { textContent: 'Preserved Context (Interruption Recovery)' })
+        ]));
+
+        const summaryText = (task.context && task.context.summary) ? task.context.summary : 'No checkpoint recorded yet.';
+        ctxBox.appendChild(el('div', { className: 'context-summary', textContent: summaryText }));
+
+        if (task.context && task.context.nextStep) {
+          ctxBox.appendChild(el('div', { className: 'context-next' }, [
+            el('strong', { textContent: 'Next: ' }),
+            document.createTextNode(task.context.nextStep)
+          ]));
+        }
+
+        if (task.context && task.context.notes && task.context.notes.length > 0) {
+          const ul = el('ul', { className: 'context-notes' });
+          for (const note of task.context.notes) {
+            ul.appendChild(el('li', { textContent: note }));
+          }
+          ctxBox.appendChild(ul);
+        }
+        body.appendChild(ctxBox);
+
+        // Patches summary (if any)
+        if (task.patches && task.patches.length > 0) {
+          const patchSummary = el('div', { style: 'margin-top:2px; font-size:11px;' }, [
+            el('strong', { style: 'color:var(--text-main);', textContent: `Patches (${task.patches.length}): ` }),
+            el('span', { style: 'font-family:var(--font-mono); color:#cbd5e1;', textContent: task.patches.map(p => p.path).join(', ') })
+          ]);
+          body.appendChild(patchSummary);
+        }
+
+        // Actions
+        if (task.status !== 'integrated') {
+          const actionsRow = el('div', { className: 'task-actions' }, [
+            el('button', {
+              className: 'btn btn-sm',
+              textContent: 'Checkpoint',
+              onclick: () => openCheckpointModal(task)
+            }),
+            el('button', {
+              className: 'btn btn-sm btn-primary',
+              textContent: 'Propose Patch',
+              onclick: () => openProposeModal(task)
+            })
+          ]);
+          body.appendChild(actionsRow);
+        }
+
+        card.appendChild(body);
+        return card;
+      }
+
+      function renderCandidateSection(state) {
+        const candidateSection = document.getElementById('candidate-section');
+        const statusBadge = document.getElementById('candidate-status-badge');
+        const candidateHashBox = document.getElementById('candidate-hash-container');
+        const diffViewer = document.getElementById('candidate-diff-viewer');
+        const evidenceSummary = document.getElementById('evidence-summary');
+        const evidenceChecksContainer = document.getElementById('evidence-checks-container');
+        const evidenceChecksList = document.getElementById('evidence-checks-list');
+        const approvalSummary = document.getElementById('approval-summary');
+        const btnIntegrate = document.getElementById('btn-integrate');
+        const btnApprove = document.getElementById('btn-approve');
+
+        clearElement(candidateHashBox);
+        clearElement(diffViewer);
+        clearElement(evidenceChecksList);
+
+        if (!state.candidate) {
+          candidateSection.style.display = 'none';
+          statusBadge.textContent = 'NO CANDIDATE';
+          statusBadge.className = 'badge badge-rev';
+          return;
+        }
+
+        candidateSection.style.display = 'block';
+        statusBadge.textContent = 'ACTIVE CANDIDATE';
+        statusBadge.className = 'badge status-proposed';
+
+        const candidate = state.candidate;
+        document.getElementById('candidate-base-rev').textContent = `#${candidate.baseRevision}`;
+        document.getElementById('candidate-tasks-list').textContent = candidate.taskIds.join(', ');
+
+        // Candidate Hash with full text visible on hover
+        const hash = candidate.treeHash;
+        const shortHash = hash.length > 18 ? `${hash.slice(0, 8)}…${hash.slice(-8)}` : hash;
+        const hashBadge = el('div', {
+          className: 'hash-badge',
+          title: hash,
+          onclick: () => {
+            navigator.clipboard?.writeText(hash);
+          }
+        }, [
+          el('svg', { width: '12', height: '12', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }, [
+            el('polyline', { points: '16 18 22 12 16 6' }),
+            el('polyline', { points: '8 6 2 12 8 18' })
+          ]),
+          el('span', { textContent: shortHash }),
+          el('span', { className: 'hash-tooltip', textContent: `Exact SHA-256: ${hash}` })
+        ]);
+        candidateHashBox.appendChild(hashBadge);
+
+        // Render Diffs: compare candidate.files with state.baseline
+        renderDiff(state.baseline || {}, candidate.files || {}, diffViewer);
+
+        // Evidence Gate
+        if (candidate.evidence) {
+          const ev = candidate.evidence;
+          evidenceSummary.textContent = `Executed by: ${ev.runner} | ${ev.passed ? 'PASSED' : 'FAILED'} (Tree Hash Verified)`;
+          evidenceSummary.style.color = ev.passed ? 'var(--status-green)' : 'var(--status-red)';
+
+          if (ev.checks && ev.checks.length > 0) {
+            evidenceChecksContainer.style.display = 'block';
+            for (const chk of ev.checks) {
+              evidenceChecksList.appendChild(el('li', { textContent: `✓ ${chk}` }));
+            }
+          } else {
+            evidenceChecksContainer.style.display = 'none';
+          }
+        } else {
+          evidenceSummary.textContent = 'Awaiting trusted fixture test runner execution via POST /api/validate';
+          evidenceSummary.style.color = 'var(--text-muted)';
+          evidenceChecksContainer.style.display = 'none';
+        }
+
+        // Approval Gate
+        if (candidate.approval) {
+          const ap = candidate.approval;
+          approvalSummary.textContent = `Approved by: ${ap.human} (Exact Tree Hash: ${ap.treeHash.slice(0, 10)}…)`;
+          approvalSummary.style.color = 'var(--status-green)';
+          btnApprove.textContent = 'Approved ✓';
+          btnApprove.disabled = true;
+        } else {
+          approvalSummary.textContent = 'Awaiting explicit human sign-off on exact tree contents.';
+          approvalSummary.style.color = 'var(--text-muted)';
+          btnApprove.textContent = 'Approve Exact Tree';
+          btnApprove.disabled = false;
+        }
+
+        // Integration Gate
+        const canIntegrate = Boolean(
+          candidate.evidence &&
+          candidate.evidence.passed &&
+          candidate.approval &&
+          candidate.baseRevision === state.revision
+        );
+        btnIntegrate.disabled = !canIntegrate;
+        if (!candidate.evidence) {
+          btnIntegrate.title = 'Requires passing evidence first';
+        } else if (!candidate.approval) {
+          btnIntegrate.title = 'Requires human approval first';
+        } else if (candidate.baseRevision !== state.revision) {
+          btnIntegrate.title = 'Candidate base revision is stale relative to baseline';
+        } else {
+          btnIntegrate.title = 'Integrate candidate into authoritative baseline';
+        }
+      }
+
+      function renderDiff(baseline, candidateFiles, container) {
+        const allPaths = Array.from(new Set([...Object.keys(baseline), ...Object.keys(candidateFiles)])).sort();
+        let diffCount = 0;
+
+        for (const path of allPaths) {
+          const baseContent = baseline[path] ?? null;
+          const candContent = candidateFiles[path] ?? null;
+
+          if (baseContent === candContent) continue;
+          diffCount++;
+
+          const fileHeader = el('div', { className: 'diff-file-header' }, [
+            el('span', { textContent: path }),
+            el('span', {
+              style: 'font-size:10px; font-weight:normal; color:var(--text-dim);',
+              textContent: baseContent === null ? 'Added' : candContent === null ? 'Deleted' : 'Modified'
+            })
+          ]);
+          container.appendChild(fileHeader);
+
+          // Simple line-by-line diff
+          const baseLines = baseContent !== null ? baseContent.split('\n') : [];
+          const candLines = candContent !== null ? candContent.split('\n') : [];
+
+          if (baseContent === null) {
+            // Entirely added
+            for (const l of candLines) {
+              container.appendChild(el('div', { className: 'diff-line diff-add', textContent: `+ ${l}` }));
+            }
+          } else if (candContent === null) {
+            // Entirely deleted
+            for (const l of baseLines) {
+              container.appendChild(el('div', { className: 'diff-line diff-del', textContent: `- ${l}` }));
+            }
+          } else {
+            // Modified
+            for (const l of baseLines) {
+              if (!candLines.includes(l)) {
+                container.appendChild(el('div', { className: 'diff-line diff-del', textContent: `- ${l}` }));
+              }
+            }
+            for (const l of candLines) {
+              if (!baseLines.includes(l)) {
+                container.appendChild(el('div', { className: 'diff-line diff-add', textContent: `+ ${l}` }));
+              }
+            }
+          }
+        }
+
+        if (diffCount === 0) {
+          container.appendChild(el('div', { className: 'empty-state', textContent: 'No changes between baseline and candidate files.' }));
+        }
+      }
+
+      function renderBaselineFiles(baseline) {
+        const container = document.getElementById('baseline-files-list');
+        const countBadge = document.getElementById('baseline-file-count');
+        clearElement(container);
+
+        if (!baseline || Object.keys(baseline).length === 0) {
+          countBadge.textContent = '0 Files';
+          container.appendChild(el('div', { className: 'empty-state', textContent: 'Baseline is empty.' }));
+          return;
+        }
+
+        const keys = Object.keys(baseline).sort();
+        countBadge.textContent = `${keys.length} File${keys.length === 1 ? '' : 's'}`;
+
+        for (const k of keys) {
+          const content = baseline[k];
+          const lines = content ? content.split('\n').length : 0;
+          const item = el('div', { className: 'file-tree-item' }, [
+            el('span', { textContent: k }),
+            el('span', { style: 'color:var(--text-dim);', textContent: `${lines} lines` })
+          ]);
+          container.appendChild(item);
+        }
+      }
+
+      function renderEvents(events) {
+        const container = document.getElementById('events-container');
+        const countSpan = document.getElementById('event-count');
+        clearElement(container);
+
+        if (!events || events.length === 0) {
+          countSpan.textContent = '0';
+          container.appendChild(el('div', { className: 'empty-state', textContent: 'No events logged.' }));
+          return;
+        }
+
+        countSpan.textContent = String(events.length);
+
+        // Display newest events first
+        const sorted = [...events].reverse();
+        for (const ev of sorted) {
+          let roleClass = 'actor-agent';
+          if (ev.actor && ev.actor.includes('human')) roleClass = 'actor-human';
+          else if (ev.actor && (ev.actor.includes('runner') || ev.actor.includes('fixture'))) roleClass = 'actor-runner';
+
+          const item = el('div', { className: 'event-item' }, [
+            el('div', { className: 'event-top' }, [
+              el('div', { style: 'display:flex; align-items:center; gap:6px;' }, [
+                el('span', { className: 'event-seq', textContent: `#${ev.sequence}` }),
+                el('span', { className: 'badge badge-rev', textContent: ev.type })
+              ]),
+              el('span', { className: `actor-badge ${roleClass}`, textContent: ev.actor || 'unknown' })
+            ]),
+            el('div', { className: 'event-msg', textContent: ev.message })
+          ]);
+          container.appendChild(item);
+        }
+      }
+
+      // Action Handlers
+      // Objective Form
+      const formObj = document.getElementById('form-objective');
+      const inputObj = document.getElementById('input-obj');
+      document.getElementById('btn-edit-obj').addEventListener('click', () => {
+        formObj.classList.toggle('active');
+        if (formObj.classList.contains('active')) {
+          inputObj.value = (currentState && currentState.objective) ? currentState.objective : '';
+          inputObj.focus();
+        }
+      });
+      document.getElementById('btn-cancel-obj').addEventListener('click', () => {
+        formObj.classList.remove('active');
+      });
+      document.getElementById('btn-save-obj').addEventListener('click', async () => {
+        const val = inputObj.value.trim();
+        if (!val) return;
+        const res = await postAction({
+          type: 'create_objective',
+          objective: val,
+          actor: { id: 'local-human', role: 'human' }
+        });
+        if (res) formObj.classList.remove('active');
+      });
+
+      // Task Creation Form
+      const formTask = document.getElementById('form-create-task');
+      document.getElementById('btn-toggle-new-task').addEventListener('click', () => {
+        formTask.classList.toggle('active');
+        if (formTask.classList.contains('active')) {
+          document.getElementById('task-input-id').value = `task-${Date.now().toString(36).slice(-4)}`;
+          document.getElementById('task-input-title').value = '';
+          document.getElementById('task-input-agent').value = 'devin-worker-1';
+          document.getElementById('task-input-intent').value = '';
+          document.getElementById('task-input-paths').value = '';
+          document.getElementById('task-input-title').focus();
+        }
+      });
+      document.getElementById('btn-cancel-task').addEventListener('click', () => {
+        formTask.classList.remove('active');
+      });
+      document.getElementById('btn-submit-task').addEventListener('click', async () => {
+        const id = document.getElementById('task-input-id').value.trim();
+        const title = document.getElementById('task-input-title').value.trim();
+        const agent = document.getElementById('task-input-agent').value.trim() || 'agent';
+        const intent = document.getElementById('task-input-intent').value.trim();
+        const pathsRaw = document.getElementById('task-input-paths').value.trim();
+        const paths = pathsRaw ? pathsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+        if (!id || !title) {
+          showError('Task ID and Title are required', 'VALIDATION_ERROR');
+          return;
+        }
+
+        const res = await postAction({
+          type: 'create_task',
+          id, title, agent, intent, paths,
+          actor: { id: 'local-human', role: 'human' }
+        });
+        if (res) formTask.classList.remove('active');
+      });
+
+      // Checkpoint Modal
+      const modalCheckpoint = document.getElementById('modal-checkpoint');
+      function openCheckpointModal(task) {
+        document.getElementById('cp-task-id').value = task.id;
+        document.getElementById('cp-summary').value = task.context?.summary || '';
+        document.getElementById('cp-next').value = task.context?.nextStep || '';
+        document.getElementById('cp-notes').value = (task.context?.notes || []).join('\n');
+        modalCheckpoint.style.display = 'flex';
+      }
+      function closeCheckpointModal() {
+        modalCheckpoint.style.display = 'none';
+      }
+      document.getElementById('btn-close-checkpoint').addEventListener('click', closeCheckpointModal);
+      document.getElementById('btn-cancel-cp').addEventListener('click', closeCheckpointModal);
+      document.getElementById('btn-submit-cp').addEventListener('click', async () => {
+        const taskId = document.getElementById('cp-task-id').value;
+        const summary = document.getElementById('cp-summary').value.trim();
+        const nextStep = document.getElementById('cp-next').value.trim();
+        const notesRaw = document.getElementById('cp-notes').value.trim();
+        const notes = notesRaw ? notesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+        const res = await postAction({
+          type: 'checkpoint',
+          taskId,
+          context: { summary, nextStep, notes },
+          actor: { id: currentState.tasks.find(task => task.id === taskId)?.agent || 'agent', role: 'agent' }
+        });
+        if (res) closeCheckpointModal();
+      });
+
+      // Propose Modal
+      const modalPropose = document.getElementById('modal-propose');
+      function openProposeModal(task) {
+        document.getElementById('prop-task-id').value = task.id;
+        document.getElementById('prop-path').value = task.paths && task.paths.length > 0 ? task.paths[0] : '';
+        const defaultBefore = (currentState && currentState.baseline && task.paths && task.paths.length > 0)
+          ? (task.baseFiles[task.paths[0]] ?? '')
+          : '';
+        document.getElementById('prop-before').value = defaultBefore;
+        document.getElementById('prop-after').value = defaultBefore;
+        modalPropose.style.display = 'flex';
+      }
+      function closeProposeModal() {
+        modalPropose.style.display = 'none';
+      }
+      document.getElementById('btn-close-propose').addEventListener('click', closeProposeModal);
+      document.getElementById('btn-cancel-prop').addEventListener('click', closeProposeModal);
+      document.getElementById('btn-submit-prop').addEventListener('click', async () => {
+        const taskId = document.getElementById('prop-task-id').value;
+        const path = document.getElementById('prop-path').value.trim();
+        const before = document.getElementById('prop-before').value;
+        const after = document.getElementById('prop-after').value;
+
+        if (!path) {
+          showError('File path is required', 'VALIDATION_ERROR');
+          return;
+        }
+
+        const res = await postAction({
+          type: 'propose',
+          taskId,
+          patches: [{
+            path,
+            before: before.length === 0 ? null : before,
+            after: after.length === 0 ? null : after
+          }],
+          actor: { id: currentState.tasks.find(task => task.id === taskId)?.agent || 'agent', role: 'agent' }
+        });
+        if (res) closeProposeModal();
+      });
+
+      // Assemble Button
+      document.getElementById('btn-assemble').addEventListener('click', async () => {
+        const checkboxes = document.querySelectorAll('#assemble-task-selector input[type="checkbox"]:checked');
+        const taskIds = Array.from(checkboxes).map(cb => cb.value);
+        if (taskIds.length === 0) {
+          showError('Select at least one proposed task to assemble', 'VALIDATION_ERROR');
+          return;
+        }
+        await postAction({
+          type: 'assemble',
+          taskIds,
+          actor: { id: 'local-human', role: 'human' }
+        });
+      });
+
+      // Run Evidence (POST /api/validate)
+      document.getElementById('btn-run-evidence').addEventListener('click', async () => {
+        await postValidate();
+      });
+
+      // Approve Exact Candidate
+      document.getElementById('btn-approve').addEventListener('click', async () => {
+        if (!currentState || !currentState.candidate) return;
+        await postAction({
+          type: 'approve',
+          treeHash: currentState.candidate.treeHash,
+          actor: { id: 'local-human', role: 'human' }
+        });
+      });
+
+      // Integrate Candidate
+      document.getElementById('btn-integrate').addEventListener('click', async () => {
+        await postAction({
+          type: 'integrate',
+          actor: { id: 'local-human', role: 'human' }
+        });
+      });
+
+      // Refresh Button
+      document.getElementById('btn-refresh').addEventListener('click', fetchState);
+
+      // Run Demo Button
+      document.getElementById('btn-demo').addEventListener('click', runDemo);
+
+      // Initial Fetch
+      fetchState();
+
+      // Poll state every 4 seconds to reflect other concurrent agent updates
+      setInterval(fetchState, 4000);
+
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "confluence",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "COORDINATOR", "class_name": "Coordinator" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Coordinator"] }],
+  "artifacts": [{ "binding": "ARTIFACTS", "namespace": "default" }],
+  "observability": { "enabled": true }
+}

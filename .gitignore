@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.local/
+.dev.vars
+discovery/maos_*.json
+discovery/
+logs/
+*.log
+wrangler.local.json

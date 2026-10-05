@@ -1,0 +1,29 @@
+# Confluence machine completion roadmap
+
+Owner: Eve. Updated October 4, 2026, America/Chicago. This file defines completion; it does not assert the whole project is finished.
+
+## Product goal
+
+Help a human lead several coding agents from one objective to a reviewed Git result: retain reasoning across interruption, surface conflicting work, and bind validation and approval to the exact bytes published. Workers owns coordination and authorization; Artifacts owns baseline/task Git repositories; a trusted runner owns execution. Agent agreement is never validation evidence.
+
+## Execution rules
+
+Finish milestones in dependency order. A blocked platform gate remains open; prepare the next independent component locally without claiming its platform acceptance. Each milestone requires raw logs, exact version/digests and a coordinator evidence review. Scope shrinks before correctness does. Target a complete rehearsal October 12, release freeze October 13; these are planning targets, not guarantees.
+
+1. **Platform preflight and access — complete for the bounded experiment.** Owner Eve, existing MAOS task 1067. David upgraded the account; the supplied account token identifies the intended account and Artifacts repository listing succeeds. Historical access errors and the inherited account mismatch are reconciled. Live Worker binding create/read/log/fork and HTTPS Git push/scope/revocation checks passed; disposable resource cleanup is recorded. Deliver repeatable credential-safe preflight, explicit account selection, authenticated private-state reads, and account-access handoff. Exit: real create → seed Git commit → fork → read/log → scoped token/revocation round trip, with recorded cleanup and no secret output. A publicly deployed Worker and end-to-end product integration remain later gates.
+2. **Exact Git publication and recovery — local component verified; remote wiring next.** Owner Devin, GLM 5.3 Flash Max, task 1068. Build and test a portable-bundle publisher using real local bare Git repositories and atomic compare-and-swap. Then wire Artifacts Git transport and Worker reservation/receipt protocol. Exit: approved candidate alone can advance expected baseline; a competing publisher cannot overwrite it; crash/retry reconciles actual remote ref without falsely updating coordinator state. Local tests alone do not close this milestone.
+3. **Real provider execution and resumption — queued after 2.** Owner Eve with remaining agent budget, task 1069. Launch at least two coding providers against isolated task repositories with narrow credentials, bounded time/output and recorded start/end times. Save context before stopping one provider and recover it in a fresh process. Exit: actual useful commits, overlapping execution intervals, recovered checkpoint and one reconciled candidate. Do not count deterministic demo tasks as coding agents.
+4. **Complete human review workflow — queued after 3.** Owner Eve. Connect task repository identity, provider status, conflict reasons, recovered reasoning, candidate diff, trusted evidence and explicit approval. Exit: browser walkthrough reaches the actual Artifacts baseline; unauthorized and stale requests cannot publish; errors explain the next action. Keep local simulation visibly distinct.
+5. **Adversarial and measured evidence — queued after 4.** Owner independent reviewer plus Eve. Exercise stale bases, same-file overlap, disjoint semantic regression, denied credentials, failed runner, concurrent publish and crash windows. Record observed counts and latency for bounded concurrency, including failures. Exit: reproducible results and no unresolved critical correctness issue. Never extrapolate a small run into massive-scale claims.
+6. **Fresh-clone release and demo packet — preparation delivered, acceptance queued after 5.** Owner agy plus Eve. A sequential release verifier captures tests, typecheck and Worker build. Fresh clone must reproduce setup; audit tracked bytes for secrets and licensing; retain evidence manifest and seven-minute demo narrative. Exit: another environment can run the project from the pinned release; the video shows observed platform/provider behavior; claims match logs.
+7. **Publication and submission handoff — queued after 6.** Owner David for release decisions and entry. Prepare exact repository contents, deployment configuration, rollback/resource inventory, final form text and video. Exit: human authorizes publication/deployment, confirms eligibility and rights, reviews final materials and submits personally. Machine completion never means the contest form was submitted.
+
+## Resource budget and decision checkpoints
+
+Historical dispatches: 7 Devin and 4 agy. This execution wave adds one of each: **8/10 Devin, 5/6 agy**; failed invocations count. Leave two Devin and one agy assignments for provider/review work. Devin remains `glm-5-3-flash-max`; changing it requires a written tradeoff. No new provider dispatch may exceed the ceilings.
+
+After milestone 1: verify actual API and billing/access boundaries before choosing transport. After 2: decide whether a Node runner is sufficient for the demo; avoid adding containers without need. After 3: simplify to a small measured workflow if orchestration is unreliable. After 5: cut optional features and freeze the tested path.
+
+Current baseline evidence: 60 tests in seven files passed; typecheck and Worker dry build passed. These cover implemented local code; they are not acceptance of future integration/provider features. Updated command results belong in EVIDENCE.md and ignored logs/.
+
+Submission sources: [official rules](https://www.cloudflare.com/documents/build-next-gen-git-platform-competition-terms.pdf), [submission form](https://www.cloudflare.com/git-competition/submit/). Official deadline: October 14, 2026 11:59 PM PDT (October 15, 1:59 AM Central). Human queue: `/Users/david/Desktop/Delegation/cloudflare-confluence-submission.md`.
